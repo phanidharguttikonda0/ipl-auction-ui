@@ -239,46 +239,31 @@ export const useAuctionWebSocket = ({
     setAuctionState((prev) => ({ ...prev, timerRemaining: 0 }));
   }, []);
 
-  useEffect(() => {
-    const authToken = localStorage.getItem("auth_token");
-    if (!authToken) {
-      onConnectionError?.("No authentication token found");
-      return;
-    }
-    console.log(`the url was ${WS_BASE_URL}/ws/${roomId}/${participantId}`)
-    const wsUrl = `${WS_BASE_URL}/ws/${roomId}/${participantId}`;
-    const ws = new WebSocket(wsUrl);
+    useEffect(() => {
+        const authToken = localStorage.getItem("auth_token");
+        if (!authToken) {
+            onConnectionError?.("No authentication token found");
+            return;
+        }
 
-    ws.onopen = () => {
-      setConnected(true);
-    };
+        const wsUrl = `${WS_BASE_URL}/ws/${roomId}/${participantId}`;
+        const ws = new WebSocket(wsUrl);
 
-    ws.onmessage = (event) => {
-      try {
-        handleMessage(event.data);
-      } catch (error) {
-        console.error("Error handling WebSocket message:", error);
-      }
-    };
+        ws.onopen = () => setConnected(true);
+        ws.onmessage = (event) => handleMessage(event.data);
+        ws.onerror = () => onConnectionError?.("Connection error occurred");
+        ws.onclose = () => setConnected(false);
 
-    ws.onerror = () => {
-      onConnectionError?.("Connection error occurred");
-    };
+        wsRef.current = ws;
 
-    ws.onclose = (event) => {
-        console.warn(`WebSocket closed: code=${event.code}, reason=${event.reason}`);
-        setConnected(false);
-    };
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+            ws.close();
+        };
+    }, [roomId, participantId]);  // 🚀 ONLY THESE TWO
 
-    wsRef.current = ws;
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      ws.close();
-    };
-  }, [roomId, participantId, onConnectionError, handleMessage]);
-
-  const sendMessage = useCallback((msg: string) => {
+    const sendMessage = useCallback((msg: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(msg);
     }

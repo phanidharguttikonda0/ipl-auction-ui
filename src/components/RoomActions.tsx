@@ -53,12 +53,21 @@ export const RoomActions = ({ onRoomReady }: RoomActionsProps) => {
     try {
       setLoading(true);
       setError("");
-      const result = await apiClient.joinRoomGetTeams(roomIdInput);
+        const result = await apiClient.joinRoomGetTeams(roomIdInput);
 
-      if (typeof result === "object" && Array.isArray(result)) {
-        setAvailableTeams(result);
-        setStep("select");
-      }
+        console.log("Join Room Teams Response:", result);
+        console.log("participant_id was ", result.participant_id)
+        if (result.participant_id) {
+            resetState();
+            onRoomReady(result.room_id, result.participant_id, result.team_name);
+        }
+        else if (Array.isArray(result.remaining_teams)) {
+            setAvailableTeams(result.remaining_teams);
+            setStep("select");
+        } else {
+            setError("Unexpected response from server");
+        }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch teams");
     } finally {
