@@ -12,8 +12,9 @@ interface ParticipantsListProps {
 export const ParticipantsList = ({
   participants,
   myParticipantId,
+  onSelectParticipant,
 }: ParticipantsListProps) => {
-  const [selectedParticipant, setSelectedParticipant] = useState<number | null>(null);
+
 
   const participantsList = useCallback(() => {
     return Array.from(participants.values()).sort((a, b) => b.balance - a.balance);
@@ -40,7 +41,7 @@ export const ParticipantsList = ({
             return (
               <button
                 key={participant.participant_id}
-                onClick={() => setSelectedParticipant(participant.participant_id)}
+                onClick={() => onSelectParticipant(participant.participant_id)}
                 className={`w-full text-left p-4 rounded-lg transition-all border ${
                   isMe
                     ? "bg-blue-500/10 border-blue-500/50 hover:bg-blue-500/20"
@@ -93,12 +94,6 @@ export const ParticipantsList = ({
         </div>
       </div>
 
-      {selectedParticipant && (
-        <TeamDetailsModal
-          participantId={selectedParticipant}
-          onClose={() => setSelectedParticipant(null)}
-        />
-      )}
     </>
   );
 };

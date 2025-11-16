@@ -6,6 +6,7 @@ import { ParticipantsList } from "../components/auction/ParticipantsList";
 import { AuctionControls } from "../components/auction/AuctionControls";
 import { SoldUnsoldList } from "../components/auction/SoldUnsoldList";
 import { Toast, type ToastType } from "../components/Toast";
+import {TeamDetailsModal} from "../components/TeamDetailsModal.tsx";
 
 interface AuctionRoomPageProps {
   roomId: string;
@@ -21,7 +22,7 @@ export const AuctionRoomPage = ({
   onBack,
 }: AuctionRoomPageProps) => {
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-
+    const [selectedParticipant, setSelectedParticipant] = useState<number | null>(null);
   const handleMessage = useCallback((message: string) => {
     if (message.toLowerCase().includes("sold")) {
       setToast({ message, type: "success" });
@@ -104,67 +105,82 @@ export const AuctionRoomPage = ({
           />
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-3 order-2 lg:order-1">
-            <div className="sticky top-6">
-              <ParticipantsList
-                participants={auctionState.participants}
-                myParticipantId={participantId}
-              />
-            </div>
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          <div className="lg:col-span-6 order-1 lg:order-2 space-y-6">
-            {auctionState.currentPlayer ? (
-              <PlayerCard
-                player={auctionState.currentPlayer}
-                currentBid={auctionState.currentBid}
-                highestBidder={auctionState.highestBidder}
-                timerRemaining={auctionState.timerRemaining}
-              />
-            ) : (
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-12 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-700/50 rounded-full mb-4">
-                  <Gavel className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {auctionState.auctionStatus === "completed"
-                    ? "Auction Completed"
-                    : auctionState.auctionStatus === "stopped"
-                    ? "Auction Paused"
-                    : "Waiting to Start"}
-                </h3>
-                <p className="text-gray-400">
-                  {auctionState.auctionStatus === "completed"
-                    ? "Thank you for participating!"
-                    : auctionState.auctionStatus === "stopped"
-                    ? "Need minimum 3 participants to continue"
-                    : "Press Start Auction to begin"}
-                </p>
+              {/* LEFT SIDEBAR (Sticky OK here) */}
+              <div className="lg:col-span-3 order-2 lg:order-1">
+                  <div className="sticky top-24">
+                      <ParticipantsList
+                          participants={auctionState.participants}
+                          myParticipantId={participantId}
+                          onSelectParticipant={setSelectedParticipant}
+                      />
+                  </div>
               </div>
-            )}
 
-            <AuctionControls
-              auctionStatus={auctionState.auctionStatus}
-              participantCount={auctionState.participants.size}
-              myBalance={auctionState.myBalance}
-              currentBid={auctionState.currentBid}
-              onStart={startAuction}
-              onBid={placeBid}
-              onEnd={endAuction}
-            />
+              {/* CENTER (Player card + Controls) — sticky removed */}
+              <div className="lg:col-span-6 order-1 lg:order-2 flex flex-col gap-6">
+
+                  {auctionState.currentPlayer ? (
+                      <PlayerCard
+                          player={auctionState.currentPlayer}
+                          currentBid={auctionState.currentBid}
+                          highestBidder={auctionState.highestBidder}
+                          timerRemaining={auctionState.timerRemaining}
+                      />
+                  ) : (
+                      <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-12 text-center">
+                          <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-700/50 rounded-full mb-4">
+                              <Gavel className="w-8 h-8 text-gray-400" />
+                          </div>
+                          <h3 className="text-xl font-bold text-white mb-2">
+                              {auctionState.auctionStatus === "completed"
+                                  ? "Auction Completed"
+                                  : auctionState.auctionStatus === "stopped"
+                                      ? "Auction Paused"
+                                      : "Waiting to Start"}
+                          </h3>
+                          <p className="text-gray-400">
+                              {auctionState.auctionStatus === "completed"
+                                  ? "Thank you for participating!"
+                                  : auctionState.auctionStatus === "stopped"
+                                      ? "Need minimum 3 participants to continue"
+                                      : "Press Start Auction to begin"}
+                          </p>
+                      </div>
+                  )}
+
+                  <AuctionControls
+                      auctionStatus={auctionState.auctionStatus}
+                      participantCount={auctionState.participants.size}
+                      myBalance={auctionState.myBalance}
+                      currentBid={auctionState.currentBid}
+                      onStart={startAuction}
+                      onBid={placeBid}
+                      onEnd={endAuction}
+                  />
+
+              </div>
+
+              {/* RIGHT SIDEBAR */}
+              <div className="lg:col-span-3 order-3">
+                  <div className="sticky top-24">
+                      <SoldUnsoldList
+                          soldPlayers={auctionState.soldPlayers}
+                          unsoldPlayers={auctionState.unsoldPlayers}
+                      />
+                  </div>
+              </div>
+
           </div>
 
-          <div className="lg:col-span-3 order-3">
-            <div className="sticky top-6">
-              <SoldUnsoldList
-                soldPlayers={auctionState.soldPlayers}
-                unsoldPlayers={auctionState.unsoldPlayers}
-              />
-            </div>
-          </div>
-        </div>
       </div>
+        {selectedParticipant && (
+            <TeamDetailsModal
+                participantId={selectedParticipant}
+                onClose={() => setSelectedParticipant(null)}
+            />
+        )}
     </div>
   );
 };

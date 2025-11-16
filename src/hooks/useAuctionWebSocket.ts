@@ -5,8 +5,6 @@ import type {
     CurrentPlayer,
     BidUpdateMessage,
     SoldPlayerMessage,
-    NewJoinerMessage,
-    OldParticipantMessage,
     DisconnectedMessage,
     ParticipantState,
     AuctionStatus,
@@ -198,7 +196,7 @@ export const useAuctionWebSocket = ({
 
         onMessage?.("Loaded participant list");
     }, [onMessage]);
-    
+
 
     const handleNewPlayer = useCallback((data: CurrentPlayer) => {
         setAuctionState((prev) => ({
@@ -208,7 +206,7 @@ export const useAuctionWebSocket = ({
             highestBidder: null,
             auctionStatus: "in_progress" as AuctionStatus,
         }));
-        startTimer(30);
+        startTimer(20);
     }, []);
 
     const handleBidUpdate = useCallback((data: BidUpdateMessage) => {
@@ -217,7 +215,7 @@ export const useAuctionWebSocket = ({
             currentBid: data.bid_amount,
             highestBidder: data.team,
         }));
-        startTimer(30);
+        startTimer(20);
     }, []);
 
     const handleSoldPlayer = useCallback(
