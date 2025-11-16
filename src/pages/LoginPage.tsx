@@ -1,13 +1,9 @@
 import { useCallback, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import { Users } from "lucide-react";
 import { apiClient } from "../services/api";
-
-interface LoginPageProps {
-  onSuccess: () => void;
-  onNeedTeamSelection: (gmail: string, googleSid: string) => void;
-}
 
 interface GoogleCredentialResponse {
   credential?: string;
@@ -18,7 +14,8 @@ interface DecodedGoogle {
   sub: string;
 }
 
-export const LoginPage = ({ onSuccess, onNeedTeamSelection }: LoginPageProps) => {
+export const LoginPage = () => {
+  const navigate = useNavigate();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -40,18 +37,31 @@ export const LoginPage = ({ onSuccess, onNeedTeamSelection }: LoginPageProps) =>
         const result = await apiClient.continueWithGoogle(gmail, googleSid);
 
         if (result.hasAuth) {
-          onSuccess();
+          navigate("/home");
         } else {
-          onNeedTeamSelection(gmail, googleSid);
+          navigate("/authentication/team-selection", {
+            state: { gmail, googleSid },
+          });
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Authentication failed");
+        console.error("Authentication error:", err);
+        if (err instanceof Error) {
+          setError(err.message);
+        } else if (typeof err === "object" && err !== null && "message" in err) {
+          setError(String(err.message));
+        } else {
+          setError("Authentication failed. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
     },
-    [onSuccess, onNeedTeamSelection]
+    [navigate]
   );
+
+  const handleGoogleError = useCallback(() => {
+    setError("Google authentication failed. Please ensure your origin is authorized in Google Cloud Console.");
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
@@ -80,7 +90,7 @@ export const LoginPage = ({ onSuccess, onNeedTeamSelection }: LoginPageProps) =>
             ) : (
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
-                onError={() => setError("Google authentication failed")}
+                onError={handleGoogleError}
                 useOneTap={false}
                 theme="filled_black"
                 size="large"

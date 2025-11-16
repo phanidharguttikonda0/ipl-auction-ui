@@ -1,142 +1,58 @@
-import { useState, useEffect, useCallback } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { LoginPage } from "./pages/LoginPage";
 import { TeamSelectionPage } from "./pages/TeamSelectionPage";
 import { HomePage } from "./pages/HomePage";
 import { AuctionRoomPage } from "./pages/AuctionRoomPage";
-import { getStoredUser, decodeToken } from "./utils";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GOOGLE_CLIENT_ID } from "./constants";
-import { clearAuthToken, getAuthToken } from "./services/api";
-import type { UserAuth } from "./types";
+import { getAuthToken } from "./services/api";
 
-type AppView = "login" | "team-selection" | "home" | "auction";
-
-interface AuctionRoomData {
-  roomId: string;
-  participantId: number;
-  teamName: string;
+function RootRedirect() {
+  const token = getAuthToken();
+  return <Navigate to={token ? "/home" : "/authentication"} replace />;
 }
 
-interface GoogleCredentials {
-  gmail: string;
-  googleSid: string;
-}
-
-function AppContent() {
-  const [view, setView] = useState<AppView>("login");
-  const [user, setUser] = useState<UserAuth | null>(null);
-  const [googleCredentials, setGoogleCredentials] = useState<GoogleCredentials | null>(null);
-  const [auctionRoom, setAuctionRoom] = useState<AuctionRoomData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const storedUser = getStoredUser();
-    if (storedUser) {
-      setUser(storedUser);
-      setView("home");
-    }
-    setLoading(false);
-  }, []);
-
-  const handleLoginSuccess = useCallback(() => {
-    const storedUser = getStoredUser();
-    if (storedUser) {
-      setUser(storedUser);
-      setView("home");
-    }
-  }, []);
-
-  const handleNeedTeamSelection = useCallback((gmail: string, googleSid: string) => {
-    setGoogleCredentials({ gmail, googleSid });
-    setView("team-selection");
-  }, []);
-
-  const handleTeamSelectionSuccess = useCallback(() => {
-    const storedUser = getStoredUser();
-    if (storedUser) {
-      setUser(storedUser);
-      setView("home");
-    }
-  }, []);
-
-  const handleEnterAuction = useCallback(
-    (roomId: string, participantId: number, teamName: string) => {
-      setAuctionRoom({ roomId, participantId, teamName });
-      setView("auction");
-    },
-    []
-  );
-
-  const handleBackFromAuction = useCallback(() => {
-    setAuctionRoom(null);
-    setView("home");
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    clearAuthToken();
-    setUser(null);
-    setView("login");
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+function AuctionRoomWrapper() {
+  const { roomId } = useParams<{ roomId: string }>();
+  
+  if (!roomId) {
+    return <Navigate to="/home" replace />;
   }
 
-  if (view === "login") {
-    return (
-      <LoginPage
-        onSuccess={handleLoginSuccess}
-        onNeedTeamSelection={handleNeedTeamSelection}
-      />
-    );
-  }
-
-  if (view === "team-selection" && googleCredentials) {
-    return (
-      <TeamSelectionPage
-        gmail={googleCredentials.gmail}
-        googleSid={googleCredentials.googleSid}
-        onSuccess={handleTeamSelectionSuccess}
-      />
-    );
-  }
-
-  if (view === "auction" && auctionRoom) {
-    return (
-      <AuctionRoomPage
-        roomId={auctionRoom.roomId}
-        participantId={auctionRoom.participantId}
-        teamName={auctionRoom.teamName}
-        onBack={handleBackFromAuction}
-      />
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  return (
-    <HomePage
-      user={user}
-      onLogout={handleLogout}
-      onEnterAuction={handleEnterAuction}
-    />
-  );
+  return <AuctionRoomPage roomId={roomId} />;
 }
 
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <AppContent />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="/authentication" element={<LoginPage />} />
+          <Route
+            path="/authentication/team-selection"
+            element={<TeamSelectionPage />}
+          />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/home/room/:roomId"
+            element={
+              <ProtectedRoute>
+                <AuctionRoomWrapper />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
     </GoogleOAuthProvider>
   );
 }

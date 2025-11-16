@@ -21,7 +21,7 @@ export const apiClient = {
     const params = new URLSearchParams();
     params.append("gmail", gmail);
     params.append("google_sid", googleSid);
-    if (team) params.append("team", team);
+    if (team) params.append("favorite_team", team);
 
     const response = await fetch(`${API_BASE_URL}/continue-with-google`, {
       method: "POST",
@@ -29,15 +29,62 @@ export const apiClient = {
       body: params.toString(),
     });
 
-    const authHeader = response.headers.get("authorization");
-    if (authHeader) setAuthToken(authHeader);
+    // Check for authorization header first, even if response status is not ok
+    // Backend might return 400 but still include auth header if user exists
+    // Try multiple possible header names and case variations
+    const authHeader = 
+      response.headers.get("authorization") || 
+      response.headers.get("Authorization") ||
+      response.headers.get("AUTHORIZATION");
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Authentication failed" }));
-      throw new Error(error.message || "Failed to authenticate");
+    console.log("API Response Status:", response.status);
+    console.log("Authorization Header Present:", !!authHeader);
+    console.log("Team Provided:", !!team);
+    
+    if (authHeader) {
+      // Store the authorization token in localStorage
+      setAuthToken(authHeader);
+      console.log("Authorization token stored in localStorage");
+      
+      // Verify it was stored
+      const storedToken = getAuthToken();
+      if (storedToken) {
+        console.log("Token verified in localStorage");
+      } else {
+        console.error("Token storage verification failed");
+      }
+      
+      // If we have auth header, treat as success regardless of status code
+      return { hasAuth: true };
     }
 
-    return { hasAuth: !!authHeader };
+    // If no auth header and response is not ok, check what the error is
+    if (!response.ok) {
+      let errorData: any = null;
+      try {
+        errorData = await response.json();
+      } catch {
+        // If response is not JSON, ignore - we'll use status-based handling
+      }
+      
+      // If it's a 400 error (likely means team is required), allow user to select team
+      if (response.status === 400) {
+        // This is expected when team is not provided - user needs to select team
+        if (errorData?.message) {
+          console.log("Team selection required:", errorData.message);
+        }
+        return { hasAuth: false };
+      }
+      
+      // For other errors, get error message and throw
+      const errorMessage = errorData?.message || errorData?.detail || `Authentication failed with status ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    // If response is ok (200) but no auth header, something is wrong
+    // This should not happen - backend should send auth header on success
+    console.warn("Response OK but no authorization header received");
+    return { hasAuth: false };
   },
 
   async getAuctionsPlayed(): Promise<AuctionRoom[]> {

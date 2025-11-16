@@ -16,6 +16,7 @@ interface UseAuctionWebSocketProps {
     teamName: string;
     onConnectionError?: (error: string) => void;
     onMessage?: (message: string) => void;
+    enabled?: boolean;
 }
 
 export const useAuctionWebSocket = ({
@@ -24,6 +25,7 @@ export const useAuctionWebSocket = ({
                                         teamName,
                                         onConnectionError,
                                         onMessage,
+                                        enabled = true,
                                     }: UseAuctionWebSocketProps) => {
     const wsRef = useRef<WebSocket | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -307,6 +309,10 @@ export const useAuctionWebSocket = ({
     }, []);
 
     useEffect(() => {
+        if (!enabled || participantId <= 0 || !teamName) {
+            return;
+        }
+
         const authToken = localStorage.getItem("auth_token");
         if (!authToken) {
             onConnectionError?.("No authentication token found");
@@ -331,7 +337,8 @@ export const useAuctionWebSocket = ({
             if (timerRef.current) clearInterval(timerRef.current);
             ws.close();
         };
-    }, [roomId, participantId]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [roomId, participantId, teamName, enabled]);
 
     const sendMessage = useCallback((msg: string) => {
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {

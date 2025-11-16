@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Wifi, WifiOff, AlertCircle, Gavel } from "lucide-react";
 import { useAuctionWebSocket } from "../hooks/useAuctionWebSocket";
 import { PlayerCard } from "../components/auction/PlayerCard";
@@ -6,23 +7,63 @@ import { ParticipantsList } from "../components/auction/ParticipantsList";
 import { AuctionControls } from "../components/auction/AuctionControls";
 import { SoldUnsoldList } from "../components/auction/SoldUnsoldList";
 import { Toast, type ToastType } from "../components/Toast";
-import {TeamDetailsModal} from "../components/TeamDetailsModal.tsx";
+import { TeamDetailsModal } from "../components/TeamDetailsModal.tsx";
+import { apiClient } from "../services/api";
 
 interface AuctionRoomPageProps {
   roomId: string;
-  participantId: number;
-  teamName: string;
-  onBack: () => void;
 }
 
-export const AuctionRoomPage = ({
-  roomId,
-  participantId,
-  teamName,
-  onBack,
-}: AuctionRoomPageProps) => {
+interface LocationState {
+  participantId: number;
+  teamName: string;
+}
+
+export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as LocationState | null;
+
+  const [participantId, setParticipantId] = useState<number | null>(
+    state?.participantId ?? null
+  );
+  const [teamName, setTeamName] = useState<string | null>(
+    state?.teamName ?? null
+  );
+  const [loading, setLoading] = useState(!state);
+
+  // If state is missing, try to fetch participant info from API
+  useEffect(() => {
+    if (!state && roomId) {
+      const fetchParticipantInfo = async () => {
+        try {
+          setLoading(true);
+          // Try to get participant info - you may need to adjust this based on your API
+          const result = await apiClient.joinRoomGetTeams(roomId);
+          if (result && typeof result === "object" && "participant_id" in result) {
+            setParticipantId(result.participant_id as number);
+            setTeamName(result.team_name as string);
+          } else {
+            // If not a participant, redirect to home
+            navigate("/home", { replace: true });
+          }
+        } catch (err) {
+          console.error("Failed to fetch participant info:", err);
+          navigate("/home", { replace: true });
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchParticipantInfo();
+    }
+  }, [state, roomId, navigate]);
+
+  const handleBack = useCallback(() => {
+    navigate("/home");
+  }, [navigate]);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-    const [selectedParticipant, setSelectedParticipant] = useState<number | null>(null);
+  const [selectedParticipant, setSelectedParticipant] = useState<number | null>(null);
+
   const handleMessage = useCallback((message: string) => {
     if (message.toLowerCase().includes("sold")) {
       setToast({ message, type: "success" });
@@ -35,14 +76,25 @@ export const AuctionRoomPage = ({
     }
   }, []);
 
+  // Don't initialize WebSocket until we have participant info
+  const shouldConnect = participantId !== null && teamName !== null && !loading;
   const { connected, auctionState, startAuction, placeBid, endAuction } =
     useAuctionWebSocket({
       roomId,
-      participantId,
-      teamName,
+      participantId: participantId ?? 0,
+      teamName: teamName ?? "",
       onConnectionError: (error) => setToast({ message: error, type: "error" }),
       onMessage: handleMessage,
+      enabled: shouldConnect,
     });
+
+  if (loading || participantId === null || teamName === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 md:p-6">
@@ -51,7 +103,7 @@ export const AuctionRoomPage = ({
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <button
-                onClick={onBack}
+                onClick={handleBack}
                 className="p-2 hover:bg-gray-700 rounded-lg transition-colors group"
               >
                 <ArrowLeft className="w-6 h-6 text-gray-400 group-hover:text-white" />

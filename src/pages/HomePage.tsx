@@ -1,20 +1,39 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { RulesPanel } from "../components/RulesPanel";
 import { UserProfile } from "../components/UserProfile";
 import { AuctionHistory } from "../components/AuctionHistory";
 import { RoomActions } from "../components/RoomActions";
-import type { UserAuth } from "../types";
+import { getStoredUser } from "../utils";
+import { clearAuthToken } from "../services/api";
 
-interface HomePageProps {
-  user: UserAuth;
-  onLogout: () => void;
-  onEnterAuction: (roomId: string, participantId: number, teamName: string) => void;
-}
+export const HomePage = () => {
+  const navigate = useNavigate();
+  const user = getStoredUser();
 
-export const HomePage = ({ user, onLogout, onEnterAuction }: HomePageProps) => {
-  const handleEnterAuction = useCallback((roomId: string, participantId: number, teamName: string) => {
-    onEnterAuction(roomId, participantId, teamName);
-  }, [onEnterAuction]);
+  useEffect(() => {
+    if (!user) {
+      navigate("/authentication", { replace: true });
+    }
+  }, [user, navigate]);
+
+  const handleEnterAuction = useCallback(
+    (roomId: string, participantId: number, teamName: string) => {
+      navigate(`/home/room/${roomId}`, {
+        state: { participantId, teamName },
+      });
+    },
+    [navigate]
+  );
+
+  const handleLogout = useCallback(() => {
+    clearAuthToken();
+    navigate("/authentication", { replace: true });
+  }, [navigate]);
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 md:p-6">
@@ -33,7 +52,7 @@ export const HomePage = ({ user, onLogout, onEnterAuction }: HomePageProps) => {
             <UserProfile
               email={user.gmail}
               favoriteTeam={user.favorite_team}
-              onLogout={onLogout}
+              onLogout={handleLogout}
             />
             <AuctionHistory />
           </div>

@@ -1,23 +1,34 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Shield, CheckCircle2 } from "lucide-react";
-import { apiClient } from "../services/api";
+import { apiClient, getAuthToken } from "../services/api";
 import { TEAMS, TEAM_COLORS } from "../constants";
 import type { TeamName } from "../types";
 
-interface TeamSelectionPageProps {
+interface LocationState {
   gmail: string;
   googleSid: string;
-  onSuccess: () => void;
 }
 
-export const TeamSelectionPage = ({
-  gmail,
-  googleSid,
-  onSuccess,
-}: TeamSelectionPageProps) => {
+export const TeamSelectionPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { gmail, googleSid } = (location.state as LocationState) || {};
+
   const [selectedTeam, setSelectedTeam] = useState<TeamName | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Redirect if no credentials in state
+  useEffect(() => {
+    if (!gmail || !googleSid) {
+      navigate("/authentication", { replace: true });
+    }
+  }, [gmail, googleSid, navigate]);
+
+  if (!gmail || !googleSid) {
+    return null;
+  }
 
   const handleContinue = useCallback(async () => {
     if (!selectedTeam) return;
@@ -25,14 +36,37 @@ export const TeamSelectionPage = ({
     try {
       setLoading(true);
       setError("");
-      await apiClient.continueWithGoogle(gmail, googleSid, selectedTeam);
-      onSuccess();
+      
+      // Call the API with the selected team
+      const result = await apiClient.continueWithGoogle(gmail, googleSid, selectedTeam);
+      
+      // Verify that the authorization token was stored in localStorage
+      // Since setAuthToken is synchronous (localStorage.setItem), token should be available immediately
+      const token = getAuthToken();
+      
+      if (result.hasAuth) {
+        // If API returned hasAuth: true, token should be stored
+        if (token) {
+          // Token is stored successfully, navigate to home
+          console.log("Team selected successfully, navigating to home");
+          navigate("/home", { replace: true });
+        } else {
+          // This shouldn't happen, but handle it just in case
+          console.error("API returned hasAuth but token not found in localStorage");
+          setError("Authorization token not received. Please try again.");
+          setLoading(false);
+        }
+      } else {
+        // No auth header received - this should not happen after team selection
+        setError("Failed to complete authentication. Please try again.");
+        setLoading(false);
+      }
     } catch (err) {
+      console.error("Team selection error:", err);
       setError(err instanceof Error ? err.message : "Failed to save team selection");
-    } finally {
       setLoading(false);
     }
-  }, [selectedTeam, gmail, googleSid, onSuccess]);
+  }, [selectedTeam, gmail, googleSid, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 overflow-auto">
