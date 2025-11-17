@@ -136,17 +136,32 @@ export const apiClient = {
     return response.json();
   },
 
-  async joinRoomGetTeams(roomId: string): Promise<string | TeamName[]> {
+  async joinRoomGetTeams(roomId: string): Promise<string | TeamName[] | any> {
     const response = await fetch(`${API_BASE_URL}/rooms/join-room-get-teams/${roomId}`, {
       headers: getHeaders(),
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      if (error.message?.includes("Already a participant")) {
-        return error;
+      // Try to get error message from response
+      let errorData: any = null;
+      try {
+        errorData = await response.json();
+      } catch {
+        // If response is not JSON, use status text
+        errorData = { message: response.statusText || "Failed to fetch available teams" };
       }
-      throw new Error("Failed to fetch available teams");
+      
+      // If error has message, return it or throw with that message
+      if (errorData?.message) {
+        // If it's "Already a participant", return the full error object
+        if (errorData.message.includes("Already a participant") || errorData.participant_id) {
+          return errorData;
+        }
+        // Otherwise throw with the backend message
+        throw new Error(errorData.message);
+      }
+      
+      throw new Error(errorData?.detail || "Failed to fetch available teams");
     }
 
     return response.json();

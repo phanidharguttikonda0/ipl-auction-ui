@@ -78,7 +78,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
 
   // Don't initialize WebSocket until we have participant info
   const shouldConnect = participantId !== null && teamName !== null && !loading;
-  const { connected, auctionState, startAuction, placeBid, endAuction } =
+  const { connected, auctionState, startAuction, placeBid, pauseAuction, endAuction } =
     useAuctionWebSocket({
       roomId,
       participantId: participantId ?? 0,
@@ -189,14 +189,18 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                               {auctionState.auctionStatus === "completed"
                                   ? "Auction Completed"
                                   : auctionState.auctionStatus === "stopped"
-                                      ? "Auction Paused"
+                                      ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
+                                          ? "Auction Paused"
+                                          : "Auction Paused"
                                       : "Waiting to Start"}
                           </h3>
                           <p className="text-gray-400">
                               {auctionState.auctionStatus === "completed"
                                   ? "Thank you for participating!"
                                   : auctionState.auctionStatus === "stopped"
-                                      ? "Need minimum 3 participants to continue"
+                                      ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
+                                          ? "Auction is paused. Click Start to resume from the last player."
+                                          : "Need minimum 3 participants to continue"
                                       : "Press Start Auction to begin"}
                           </p>
                       </div>
@@ -209,6 +213,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                       currentBid={auctionState.currentBid}
                       onStart={startAuction}
                       onBid={placeBid}
+                      onPause={pauseAuction}
                       onEnd={endAuction}
                   />
 
