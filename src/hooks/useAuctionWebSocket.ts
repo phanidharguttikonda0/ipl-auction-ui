@@ -125,6 +125,18 @@ export const useAuctionWebSocket = ({
             } else if (data.includes("Auction Stopped Temporarily")) {
                 onMessage?.(data);
                 setAuctionState((prev) => ({ ...prev, auctionStatus: "stopped" }));
+            } else if (data.includes("Auction was Paused") || data === "Auction was Paused") {
+                onMessage?.(data);
+                // When paused, clear current player and timer, but don't disconnect
+                setAuctionState((prev) => ({
+                    ...prev,
+                    auctionStatus: "stopped",
+                    currentPlayer: null,
+                    currentBid: 0,
+                    highestBidder: null,
+                    timerRemaining: 0,
+                }));
+                stopTimer();
             } else {
                 onMessage?.(data);
             }
@@ -351,6 +363,7 @@ export const useAuctionWebSocket = ({
         auctionState,
         startAuction: () => sendMessage("start"),
         placeBid: () => sendMessage("bid"),
+        pauseAuction: () => sendMessage("pause"),
         endAuction: () => sendMessage("end"),
     };
 };
