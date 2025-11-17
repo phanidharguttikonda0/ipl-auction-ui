@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Wifi, WifiOff, AlertCircle, Gavel } from "lucide-react";
+import { ArrowLeft, Wifi, WifiOff, AlertCircle, Gavel, Copy } from "lucide-react";
 import { useAuctionWebSocket } from "../hooks/useAuctionWebSocket";
 import { PlayerCard } from "../components/auction/PlayerCard";
 import { ParticipantsList } from "../components/auction/ParticipantsList";
@@ -23,7 +23,13 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
+    const [copied, setCopied] = useState(false);
 
+    const handleCopy = () => {
+        navigator.clipboard.writeText(roomId);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1000); // hide in 1 sec
+    };
   const [participantId, setParticipantId] = useState<number | null>(
     state?.participantId ?? null
   );
@@ -108,12 +114,29 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
               >
                 <ArrowLeft className="w-6 h-6 text-gray-400 group-hover:text-white" />
               </button>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-white">
-                  Auction Room
-                </h1>
-                <p className="text-sm text-gray-400">Room ID: {roomId}</p>
-              </div>
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white">
+                        Auction Room
+                    </h1>
+
+                    <div className="flex items-center gap-2 mt-1">
+                        <button
+                            onClick={handleCopy}
+                            className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 transition text-gray-300"
+                            title="Copy Room ID"
+                        >
+                            <Copy size={16} />
+                        </button>
+
+                        <p className="text-sm text-gray-400">Room ID: {roomId}</p>
+                        {/* Copied message */}
+                        {copied && (
+                            <span className="text-green-400 text-xs ml-2 animate-fade-in">
+                            Copied!
+                          </span>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <div className="flex items-center gap-4 flex-wrap">
