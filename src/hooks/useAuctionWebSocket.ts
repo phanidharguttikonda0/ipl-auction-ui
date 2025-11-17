@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { WS_BASE_URL } from "../constants";
+import { apiClient } from "../services/api";
 import type {
     AuctionState,
     CurrentPlayer,
@@ -8,6 +9,8 @@ import type {
     DisconnectedMessage,
     ParticipantState,
     AuctionStatus,
+    SoldPlayerOutput,
+    UnSoldPlayerOutput,
 } from "../types";
 
 interface UseAuctionWebSocketProps {
@@ -34,10 +37,21 @@ export const useAuctionWebSocket = ({
     const [auctionState, setAuctionState] = useState<AuctionState>({
         participants: new Map(),
         currentPlayer: null,
+        previousPlayer: null,
         currentBid: 0,
         highestBidder: null,
-        soldPlayers: [],
-        unsoldPlayers: [],
+        soldPlayers: {
+            page1: [],
+            page2: [],
+            currentPage: 1,
+            loading: false,
+        },
+        unsoldPlayers: {
+            page1: [],
+            page2: [],
+            currentPage: 1,
+            loading: false,
+        },
         timerRemaining: 0,
         myBalance: 100,
         myTeamName: teamName,
@@ -107,13 +121,44 @@ export const useAuctionWebSocket = ({
         (data: string) => {
             if (data === "UnSold") {
                 onMessage?.("Player UNSOLD!");
-                setAuctionState((prev) => ({
-                    ...prev,
-                    unsoldPlayers: [...prev.unsoldPlayers, prev.currentPlayer?.name || "Unknown"],
-                    currentPlayer: null,
-                    currentBid: 0,
-                    highestBidder: null,
-                }));
+                setAuctionState((prev) => {
+                    // Use previousPlayer if available, otherwise use currentPlayer
+                    const playerToUse = prev.previousPlayer || prev.currentPlayer;
+                    
+                    if (!playerToUse) {
+                        return {
+                            ...prev,
+                            currentPlayer: null,
+                            currentBid: 0,
+                            highestBidder: null,
+                        };
+                    }
+
+                    const unsoldPlayer: UnSoldPlayerOutput = {
+                        player_id: playerToUse.id,
+                        player_name: playerToUse.name,
+                        role: playerToUse.role || "Unknown",
+                        base_price: playerToUse.base_price,
+                    };
+
+                    // Push to front of page1, pop from back if exceeds 10
+                    const newPage1 = [unsoldPlayer, ...prev.unsoldPlayers.page1];
+                    if (newPage1.length > 10) {
+                        newPage1.pop();
+                    }
+
+                    return {
+                        ...prev,
+                        unsoldPlayers: {
+                            ...prev.unsoldPlayers,
+                            page1: newPage1,
+                        },
+                        currentPlayer: null,
+                        previousPlayer: null,
+                        currentBid: 0,
+                        highestBidder: null,
+                    };
+                });
                 stopTimer();
             } else if (data === "exit") {
                 onMessage?.("Auction ended by host");
@@ -215,6 +260,7 @@ export const useAuctionWebSocket = ({
     const handleNewPlayer = useCallback((data: CurrentPlayer) => {
         setAuctionState((prev) => ({
             ...prev,
+            previousPlayer: prev.currentPlayer, // Store previous player before setting new one
             currentPlayer: data,
             currentBid: data.base_price,
             highestBidder: null,
@@ -248,21 +294,46 @@ export const useAuctionWebSocket = ({
                     });
                 }
 
-                const soldPlayer = {
-                    player_id: prev.currentPlayer?.id || 0,
-                    player_name: prev.currentPlayer?.name || "Unknown",
-                    role: prev.currentPlayer?.role || "Unknown",
-                    brought_price: data.sold_price,
+                // Use previousPlayer if available, otherwise use currentPlayer
+                const playerToUse = prev.previousPlayer || prev.currentPlayer;
+                
+                if (!playerToUse) {
+                    return {
+                        ...prev,
+                        participants: newParticipants,
+                        currentPlayer: null,
+                        previousPlayer: null,
+                        currentBid: 0,
+                        highestBidder: null,
+                        myBalance: data.team_name === teamName ? data.remaining_balance : prev.myBalance,
+                    };
+                }
+
+                const soldPlayer: SoldPlayerOutput = {
+                    player_id: playerToUse.id,
+                    player_name: playerToUse.name,
+                    role: playerToUse.role || "Unknown",
+                    bought_price: data.sold_price,
                     team_name: data.team_name,
                 };
+
+                // Push to front of page1, pop from back if exceeds 10
+                const newPage1 = [soldPlayer, ...prev.soldPlayers.page1];
+                if (newPage1.length > 10) {
+                    newPage1.pop();
+                }
 
                 const myBalance = data.team_name === teamName ? data.remaining_balance : prev.myBalance;
 
                 return {
                     ...prev,
                     participants: newParticipants,
-                    soldPlayers: [...prev.soldPlayers, soldPlayer],
+                    soldPlayers: {
+                        ...prev.soldPlayers,
+                        page1: newPage1,
+                    },
                     currentPlayer: null,
+                    previousPlayer: null,
                     currentBid: 0,
                     highestBidder: null,
                     myBalance,
@@ -320,6 +391,43 @@ export const useAuctionWebSocket = ({
         wsRef.current?.send("get_participants");
     }, []);
 
+    // 🆕 FETCH INITIAL SOLD/UNSOLD PLAYERS (PAGE 1)
+    const fetchInitialPlayers = useCallback(async () => {
+        try {
+            setAuctionState((prev) => ({
+                ...prev,
+                soldPlayers: { ...prev.soldPlayers, loading: true },
+                unsoldPlayers: { ...prev.unsoldPlayers, loading: true },
+            }));
+
+            const [soldPlayers, unsoldPlayers] = await Promise.all([
+                apiClient.getSoldPlayers(roomId, 1, 10),
+                apiClient.getUnsoldPlayers(roomId, 1, 10),
+            ]);
+
+            setAuctionState((prev) => ({
+                ...prev,
+                soldPlayers: {
+                    ...prev.soldPlayers,
+                    page1: soldPlayers,
+                    loading: false,
+                },
+                unsoldPlayers: {
+                    ...prev.unsoldPlayers,
+                    page1: unsoldPlayers,
+                    loading: false,
+                },
+            }));
+        } catch (error) {
+            console.error("Failed to fetch initial players:", error);
+            setAuctionState((prev) => ({
+                ...prev,
+                soldPlayers: { ...prev.soldPlayers, loading: false },
+                unsoldPlayers: { ...prev.unsoldPlayers, loading: false },
+            }));
+        }
+    }, [roomId]);
+
     useEffect(() => {
         if (!enabled || participantId <= 0 || !teamName) {
             return;
@@ -337,6 +445,7 @@ export const useAuctionWebSocket = ({
         ws.onopen = () => {
             setConnected(true);
             requestParticipantList();  // 🆕 load participants immediately
+            fetchInitialPlayers();  // 🆕 load initial sold/unsold players (page 1)
         };
 
         ws.onmessage = (event) => handleMessage(event.data);
@@ -350,13 +459,90 @@ export const useAuctionWebSocket = ({
             ws.close();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [roomId, participantId, teamName, enabled]);
+    }, [roomId, participantId, teamName, enabled, requestParticipantList, fetchInitialPlayers]);
 
     const sendMessage = useCallback((msg: string) => {
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(msg);
         }
     }, []);
+
+    // Function to change page for sold/unsold players
+    const changeSoldPage = useCallback(async (page: number) => {
+        if (page === 1) {
+            // Page 1 uses live data - no API call needed
+            setAuctionState((prev) => ({
+                ...prev,
+                soldPlayers: { ...prev.soldPlayers, currentPage: 1 },
+            }));
+            return;
+        }
+        
+        if (page === 2) {
+            // Always fetch page 2 when navigating to it
+            setAuctionState((prev) => ({
+                ...prev,
+                soldPlayers: { ...prev.soldPlayers, loading: true },
+            }));
+
+            try {
+                const players = await apiClient.getSoldPlayers(roomId, 2, 10);
+                setAuctionState((prev) => ({
+                    ...prev,
+                    soldPlayers: {
+                        ...prev.soldPlayers,
+                        page2: players,
+                        currentPage: 2,
+                        loading: false,
+                    },
+                }));
+            } catch (error) {
+                console.error("Failed to fetch sold players page 2:", error);
+                setAuctionState((prev) => ({
+                    ...prev,
+                    soldPlayers: { ...prev.soldPlayers, loading: false },
+                }));
+            }
+        }
+    }, [roomId]);
+
+    const changeUnsoldPage = useCallback(async (page: number) => {
+        if (page === 1) {
+            // Page 1 uses live data - no API call needed
+            setAuctionState((prev) => ({
+                ...prev,
+                unsoldPlayers: { ...prev.unsoldPlayers, currentPage: 1 },
+            }));
+            return;
+        }
+        
+        if (page === 2) {
+            // Always fetch page 2 when navigating to it
+            setAuctionState((prev) => ({
+                ...prev,
+                unsoldPlayers: { ...prev.unsoldPlayers, loading: true },
+            }));
+
+            try {
+                const players = await apiClient.getUnsoldPlayers(roomId, 2, 10);
+                setAuctionState((prev) => ({
+                    ...prev,
+                    unsoldPlayers: {
+                        ...prev.unsoldPlayers,
+                        page2: players,
+                        currentPage: 2,
+                        loading: false,
+                    },
+                }));
+            } catch (error) {
+                console.error("Failed to fetch unsold players page 2:", error);
+                setAuctionState((prev) => ({
+                    ...prev,
+                    unsoldPlayers: { ...prev.unsoldPlayers, loading: false },
+                }));
+            }
+        }
+    }, [roomId]);
 
     return {
         connected,
@@ -365,5 +551,7 @@ export const useAuctionWebSocket = ({
         placeBid: () => sendMessage("bid"),
         pauseAuction: () => sendMessage("pause"),
         endAuction: () => sendMessage("end"),
+        changeSoldPage,
+        changeUnsoldPage,
     };
 };

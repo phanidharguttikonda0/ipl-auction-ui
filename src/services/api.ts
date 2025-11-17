@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "../constants";
-import type { AuctionRoom, Participant, TeamDetails, PlayerDetails, RoomResponse, TeamName } from "../types";
+import type { AuctionRoom, Participant, TeamDetails, PlayerDetails, RoomResponse, TeamName, SoldPlayerOutput, UnSoldPlayerOutput } from "../types";
 
 export const getAuthToken = (): string | null => localStorage.getItem("auth_token");
 
@@ -175,6 +175,30 @@ export const apiClient = {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to join room" }));
       throw new Error(error.message || "Failed to join room");
+    }
+
+    return response.json();
+  },
+
+  async getSoldPlayers(roomId: string, pageNo: number, offset: number = 10): Promise<SoldPlayerOutput[]> {
+    const response = await fetch(`${API_BASE_URL}/players/get-sold-players/${roomId}/${pageNo}/${offset}`, {
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch sold players");
+    }
+
+    return response.json();
+  },
+
+  async getUnsoldPlayers(roomId: string, pageNo: number, offset: number = 10): Promise<UnSoldPlayerOutput[]> {
+    const response = await fetch(`${API_BASE_URL}/players/get-unsold-players/${roomId}/${pageNo}/${offset}`, {
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch unsold players");
     }
 
     return response.json();

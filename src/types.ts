@@ -40,6 +40,21 @@ export interface PlayerDetails {
   brought_price: number;
 }
 
+export interface SoldPlayerOutput {
+  player_id: number;
+  player_name: string;
+  team_name: string;
+  bought_price: number;
+  role: string;
+}
+
+export interface UnSoldPlayerOutput {
+  player_id: number;
+  player_name: string;
+  role: string;
+  base_price: number;
+}
+
 export interface RoomResponse {
   room_id: string;
   team_name: string;
@@ -93,13 +108,21 @@ export interface ParticipantState {
   connected: boolean;
 }
 
+export interface SoldUnsoldState {
+  page1: SoldPlayerOutput[] | UnSoldPlayerOutput[];
+  page2: SoldPlayerOutput[] | UnSoldPlayerOutput[];
+  currentPage: number;
+  loading: boolean;
+}
+
 export interface AuctionState {
   participants: Map<number, ParticipantState>;
   currentPlayer: CurrentPlayer | null;
+  previousPlayer: CurrentPlayer | null; // Store previous player for sold/unsold
   currentBid: number;
   highestBidder: string | null;
-  soldPlayers: Array<PlayerDetails & { team_name: string }>;
-  unsoldPlayers: string[];
+  soldPlayers: SoldUnsoldState;
+  unsoldPlayers: SoldUnsoldState;
   timerRemaining: number;
   myBalance: number;
   myTeamName: string;
