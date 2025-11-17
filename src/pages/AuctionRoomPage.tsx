@@ -78,7 +78,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
 
   // Don't initialize WebSocket until we have participant info
   const shouldConnect = participantId !== null && teamName !== null && !loading;
-  const { connected, auctionState, startAuction, placeBid, pauseAuction, endAuction } =
+  const { connected, auctionState, startAuction, placeBid, pauseAuction, endAuction, changeSoldPage, changeUnsoldPage } =
     useAuctionWebSocket({
       roomId,
       participantId: participantId ?? 0,
@@ -225,6 +225,8 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                       <SoldUnsoldList
                           soldPlayers={auctionState.soldPlayers}
                           unsoldPlayers={auctionState.unsoldPlayers}
+                          onChangeSoldPage={changeSoldPage}
+                          onChangeUnsoldPage={changeUnsoldPage}
                       />
                   </div>
               </div>
