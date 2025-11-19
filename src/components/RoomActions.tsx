@@ -53,50 +53,72 @@ export const RoomActions = ({ onRoomReady }: RoomActionsProps) => {
     try {
       setLoading(true);
       setError("");
-        const result = await apiClient.joinRoomGetTeams(roomIdInput);
 
-        console.log("Join Room Teams Response:", result);
-        console.log("participant_id was ", result.participant_id)
-        
-        if (result.participant_id) {
-          resetState();
-          onRoomReady(result.room_id, result.participant_id, result.team_name);
-          return;
+      const result = await apiClient.joinRoomGetTeams(roomIdInput);
+
+      // Case 1: backend sends participant object (already in room)
+      if (result && typeof result === "object" && "participant_id" in result) {
+        resetState();
+        onRoomReady(result.room_id, result.participant_id, result.team_name);
+        return;
       }
-      else if (Array.isArray(result.remaining_teams)) {
-          setAvailableTeams(result.remaining_teams);
+
+      // Case 2: backend sends remaining teams array (wrapped or plain)
+      const remainingTeamsRaw =
+        (result && typeof result === "object" && Array.isArray(result.remaining_teams)
+          ? result.remaining_teams
+          : Array.isArray(result)
+          ? result
+          : null) as unknown[] | null;
+
+      if (remainingTeamsRaw) {
+        const normalizedTeams = remainingTeamsRaw
+          .map((team) => {
+            if (typeof team === "string") {
+              return team as TeamName;
+            }
+            if (team && typeof team === "object") {
+              return (
+                ((team as { team_name?: string; team?: string; name?: string }).team_name ||
+                  (team as { team?: string }).team ||
+                  (team as { name?: string }).name) as TeamName | undefined
+              );
+            }
+            return undefined;
+          })
+          .filter((team): team is TeamName => Boolean(team));
+
+        if (normalizedTeams.length > 0) {
+          setAvailableTeams(normalizedTeams);
           setStep("select");
           return;
-      } 
-      
-      // Check if result has a message (error from backend)
+        }
+      }
+
+      // Case 3: backend sends message (error)
       if (result && typeof result === "object" && "message" in result) {
-        setError(result.message as string);
+        setError(String(result.message));
         return;
-    }
-    
-    // If result is a string (error message)
-    if (typeof result === "string") {
+      }
+
+      if (typeof result === "string") {
         setError(result);
         return;
-    }
-    
-    // Fallback for unexpected response
-    setError("Unexpected response from server");
+      }
 
+      setError("Unexpected response from server");
     } catch (err) {
-      // Extract error message from the error
       if (err instanceof Error) {
         setError(err.message);
-      } else if (typeof err === "object" && err !== null && "message" in err) {
-        setError(String(err.message));
+      } else if (typeof err === "object" && err && "message" in err) {
+        setError(String((err as { message: unknown }).message));
       } else {
         setError("Failed to fetch teams. Please try again.");
       }
     } finally {
       setLoading(false);
     }
-  }, [roomIdInput]);
+  }, [roomIdInput, onRoomReady, resetState]);
 
   const handleJoinRoom = useCallback(async () => {
     if (!selectedTeam) return;
