@@ -53,7 +53,18 @@ export const PlayerCard = ({
         <Clock className="w-5 h-5 text-orange-400 flex-shrink-0" />
         <div className="text-center">
           <p className="text-xs text-gray-400 mb-1">Time Remaining</p>
-          <p className="text-2xl font-bold text-white">{timerRemaining}s</p>
+          {timerRemaining > 0 ? (
+            <p className="text-2xl font-bold text-white">{timerRemaining}s</p>
+          ) : (
+            <div className="text-2xl font-bold text-orange-200 flex items-center gap-2 animate-pulse">
+              Finalizing
+              <span className="flex gap-1">
+                <span className="w-2 h-2 bg-orange-300 rounded-full animate-bounce"></span>
+                <span className="w-2 h-2 bg-orange-300 rounded-full animate-bounce delay-150"></span>
+                <span className="w-2 h-2 bg-orange-300 rounded-full animate-bounce delay-300"></span>
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
