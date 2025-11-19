@@ -58,34 +58,17 @@ export const RoomActions = ({ onRoomReady }: RoomActionsProps) => {
         console.log("Join Room Teams Response:", result);
         console.log("participant_id was ", result.participant_id)
         
-        // Check if result has participant_id (already a participant)
-        if (result && typeof result === "object" && "participant_id" in result) {
-            resetState();
-            onRoomReady(result.room_id, result.participant_id, result.team_name);
-            return;
-        }
-        
-        // Check if result is an array of teams
-        if (Array.isArray(result)) {
-            setAvailableTeams(result);
-            setStep("select");
-            return;
-        }
-        
-        // Check if result has a message (error from backend)
-        if (result && typeof result === "object" && "message" in result) {
-            setError(result.message as string);
-            return;
-        }
-        
-        // If result is a string (error message)
-        if (typeof result === "string") {
-            setError(result);
-            return;
-        }
-        
-        // Fallback for unexpected response
-        setError("Unexpected response from server");
+        if (result.participant_id) {
+          resetState();
+          onRoomReady(result.room_id, result.participant_id, result.team_name);
+      }
+      else if (Array.isArray(result.remaining_teams)) {
+          setAvailableTeams(result.remaining_teams);
+          setStep("select");
+      } else {
+          setError("Unexpected response from server");
+      }
+      
     } catch (err) {
       // Extract error message from the error
       if (err instanceof Error) {

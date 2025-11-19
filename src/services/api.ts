@@ -7,6 +7,25 @@ export const setAuthToken = (token: string) => localStorage.setItem("auth_token"
 
 export const clearAuthToken = () => localStorage.removeItem("auth_token");
 
+/**
+ * Handles unauthorized (401) responses by clearing auth token and redirecting to authentication
+ */
+const handleUnauthorized = () => {
+  clearAuthToken();
+  // Use window.location for navigation from API service (works outside React Router context)
+  window.location.href = "/authentication";
+};
+
+/**
+ * Checks response for 401 status and handles unauthorized access
+ */
+const checkUnauthorized = (response: Response): void => {
+  if (response.status === 401) {
+    handleUnauthorized();
+    throw new Error("Unauthorized - Please login again");
+  }
+};
+
 const getHeaders = (includeAuth = true): HeadersInit => {
   const headers: HeadersInit = {};
   if (includeAuth) {
@@ -58,6 +77,9 @@ export const apiClient = {
       return { hasAuth: true };
     }
 
+    // Check for 401 before checking other errors (except we check auth header first)
+    checkUnauthorized(response);
+
     // If no auth header and response is not ok, check what the error is
     if (!response.ok) {
       let errorData: any = null;
@@ -92,6 +114,7 @@ export const apiClient = {
       headers: getHeaders(),
     });
 
+    checkUnauthorized(response);
     if (!response.ok) throw new Error("Failed to fetch auctions");
     return response.json();
   },
@@ -101,6 +124,7 @@ export const apiClient = {
       headers: getHeaders(),
     });
 
+    checkUnauthorized(response);
     if (!response.ok) throw new Error("Failed to fetch participants");
     return response.json();
   },
@@ -110,6 +134,7 @@ export const apiClient = {
       headers: getHeaders(),
     });
 
+    checkUnauthorized(response);
     if (!response.ok) throw new Error("Failed to fetch team details");
     return response.json();
   },
@@ -119,6 +144,7 @@ export const apiClient = {
       headers: getHeaders(),
     });
 
+    checkUnauthorized(response);
     if (!response.ok) throw new Error("Failed to fetch team players");
     return response.json();
   },
@@ -128,6 +154,7 @@ export const apiClient = {
       headers: getHeaders(),
     });
 
+    checkUnauthorized(response);
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to create room" }));
       throw new Error(error.message || "Failed to create room");
@@ -141,6 +168,7 @@ export const apiClient = {
       headers: getHeaders(),
     });
 
+    checkUnauthorized(response);
     if (!response.ok) {
       // Try to get error message from response
       let errorData: any = null;
@@ -172,6 +200,7 @@ export const apiClient = {
       headers: getHeaders(),
     });
 
+    checkUnauthorized(response);
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to join room" }));
       throw new Error(error.message || "Failed to join room");
@@ -185,6 +214,7 @@ export const apiClient = {
       headers: getHeaders(),
     });
 
+    checkUnauthorized(response);
     if (!response.ok) {
       throw new Error("Failed to fetch sold players");
     }
@@ -197,6 +227,7 @@ export const apiClient = {
       headers: getHeaders(),
     });
 
+    checkUnauthorized(response);
     if (!response.ok) {
       throw new Error("Failed to fetch unsold players");
     }
