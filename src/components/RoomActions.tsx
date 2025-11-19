@@ -61,14 +61,29 @@ export const RoomActions = ({ onRoomReady }: RoomActionsProps) => {
         if (result.participant_id) {
           resetState();
           onRoomReady(result.room_id, result.participant_id, result.team_name);
+          return;
       }
       else if (Array.isArray(result.remaining_teams)) {
           setAvailableTeams(result.remaining_teams);
           setStep("select");
-      } else {
-          setError("Unexpected response from server");
-      }
+          return;
+      } 
       
+      // Check if result has a message (error from backend)
+      if (result && typeof result === "object" && "message" in result) {
+        setError(result.message as string);
+        return;
+    }
+    
+    // If result is a string (error message)
+    if (typeof result === "string") {
+        setError(result);
+        return;
+    }
+    
+    // Fallback for unexpected response
+    setError("Unexpected response from server");
+
     } catch (err) {
       // Extract error message from the error
       if (err instanceof Error) {
