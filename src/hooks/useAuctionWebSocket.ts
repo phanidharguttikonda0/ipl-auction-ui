@@ -544,6 +544,18 @@ export const useAuctionWebSocket = ({
         }
     }, [roomId]);
 
+    const sendRTMAmount = useCallback((amount: number) => {
+        sendMessage(`rtm-${amount.toFixed(2)}`);
+    }, [sendMessage]);
+
+    const sendRTMAccept = useCallback(() => {
+        sendMessage("rtm-accept");
+    }, [sendMessage]);
+
+    const sendRTMCancel = useCallback(() => {
+        sendMessage("rtm-cancel");
+    }, [sendMessage]);
+
     return {
         connected,
         auctionState,
@@ -553,5 +565,8 @@ export const useAuctionWebSocket = ({
         endAuction: () => sendMessage("end"),
         changeSoldPage,
         changeUnsoldPage,
+        sendRTMAmount,
+        sendRTMAccept,
+        sendRTMCancel,
     };
 };

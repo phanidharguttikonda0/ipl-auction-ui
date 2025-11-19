@@ -69,8 +69,33 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   }, [navigate]);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [selectedParticipant, setSelectedParticipant] = useState<number | null>(null);
+  
+  // RTM states
+  const [showRTMDialog, setShowRTMDialog] = useState(false);
+  const [showRTMAmountInput, setShowRTMAmountInput] = useState(false);
+  const [rtmAmountInput, setRtmAmountInput] = useState("");
+  const [showRTMAcceptDialog, setShowRTMAcceptDialog] = useState(false);
+  const [rtmOfferAmount, setRtmOfferAmount] = useState<number | null>(null);
 
   const handleMessage = useCallback((message: string) => {
+    // Handle "Use RTM" message
+    if (message === "Use RTM" || message.includes("Use RTM")) {
+      setShowRTMDialog(true);
+      return;
+    }
+
+    // Handle "rtm-amount-{amount}" message
+    if (message.startsWith("rtm-amount-")) {
+      const amountStr = message.replace("rtm-amount-", "").trim();
+      const amount = parseFloat(amountStr);
+      if (!isNaN(amount)) {
+        setRtmOfferAmount(amount);
+        setShowRTMAcceptDialog(true);
+      }
+      return;
+    }
+
+    // Handle other messages
     if (message.toLowerCase().includes("sold")) {
       setToast({ message, type: "success" });
     } else if (message.toLowerCase().includes("unsold")) {
@@ -84,7 +109,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
 
   // Don't initialize WebSocket until we have participant info
   const shouldConnect = participantId !== null && teamName !== null && !loading;
-  const { connected, auctionState, startAuction, placeBid, pauseAuction, endAuction, changeSoldPage, changeUnsoldPage } =
+  const { connected, auctionState, startAuction, placeBid, pauseAuction, endAuction, changeSoldPage, changeUnsoldPage, sendRTMAmount, sendRTMAccept, sendRTMCancel } =
     useAuctionWebSocket({
       roomId,
       participantId: participantId ?? 0,
@@ -93,6 +118,39 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
       onMessage: handleMessage,
       enabled: shouldConnect,
     });
+
+  // Handle RTM dialog "Yes" button
+  const handleRTMConfirm = useCallback(() => {
+    setShowRTMDialog(false);
+    setShowRTMAmountInput(true);
+  }, []);
+
+  // Handle RTM amount submission
+  const handleRTMAmountSubmit = useCallback(() => {
+    const amount = parseFloat(rtmAmountInput);
+    if (!isNaN(amount) && amount > 0) {
+      sendRTMAmount(amount);
+      setShowRTMAmountInput(false);
+      setRtmAmountInput("");
+      setToast({ message: `RTM amount of ₹${amount.toFixed(2)}Cr sent`, type: "info" });
+    }
+  }, [rtmAmountInput, sendRTMAmount]);
+
+  // Handle RTM accept
+  const handleRTMAccept = useCallback(() => {
+    sendRTMAccept();
+    setShowRTMAcceptDialog(false);
+    setRtmOfferAmount(null);
+    setToast({ message: "RTM offer accepted", type: "success" });
+  }, [sendRTMAccept]);
+
+  // Handle RTM cancel/reject
+  const handleRTMCancel = useCallback(() => {
+    sendRTMCancel();
+    setShowRTMAcceptDialog(false);
+    setRtmOfferAmount(null);
+    setToast({ message: "RTM offer cancelled", type: "info" });
+  }, [sendRTMCancel]);
 
   if (loading || participantId === null || teamName === null) {
     return (
@@ -262,6 +320,116 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                 participantId={selectedParticipant}
                 onClose={() => setSelectedParticipant(null)}
             />
+        )}
+
+        {/* RTM Use Dialog */}
+        {showRTMDialog && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-4">Use Right To Match (RTM)?</h3>
+              <p className="text-gray-300 mb-6">
+                You have the option to use RTM. Would you like to use it?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowRTMDialog(false);
+                    setToast({ message: "RTM declined", type: "info" });
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
+                >
+                  No
+                </button>
+                <button
+                  onClick={handleRTMConfirm}
+                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium"
+                >
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* RTM Amount Input Dialog */}
+        {showRTMAmountInput && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-4">Enter RTM Amount</h3>
+              <p className="text-gray-300 mb-4">
+                Current bid: ₹{auctionState.currentBid.toFixed(2)}Cr
+              </p>
+              <p className="text-sm text-gray-400 mb-4">
+                How much do you want to add to the current bid amount?
+              </p>
+              <input
+                type="number"
+                value={rtmAmountInput}
+                onChange={(e) => setRtmAmountInput(e.target.value)}
+                placeholder="Enter amount (e.g., 10.00)"
+                step="0.01"
+                min="0.01"
+                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all mb-4"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleRTMAmountSubmit();
+                  }
+                }}
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowRTMAmountInput(false);
+                    setRtmAmountInput("");
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRTMAmountSubmit}
+                  disabled={!rtmAmountInput || parseFloat(rtmAmountInput) <= 0 || isNaN(parseFloat(rtmAmountInput))}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    !rtmAmountInput || parseFloat(rtmAmountInput) <= 0 || isNaN(parseFloat(rtmAmountInput))
+                      ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                      : "bg-blue-500 hover:bg-blue-600 text-white"
+                  }`}
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* RTM Accept/Reject Dialog */}
+        {showRTMAcceptDialog && rtmOfferAmount !== null && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-4">RTM Offer Received</h3>
+              <p className="text-gray-300 mb-4">
+                You have received an RTM offer of <span className="text-green-400 font-bold">₹{rtmOfferAmount.toFixed(2)}Cr</span>
+              </p>
+              <p className="text-sm text-gray-400 mb-6">
+                Do you want to accept this offer?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRTMCancel}
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRTMAccept}
+                  className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors font-medium"
+                >
+                  Accept
+                </button>
+              </div>
+            </div>
+          </div>
         )}
     </div>
   );
