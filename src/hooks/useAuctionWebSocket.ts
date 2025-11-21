@@ -32,6 +32,9 @@ export const useAuctionWebSocket = ({
                                     }: UseAuctionWebSocketProps) => {
     const wsRef = useRef<WebSocket | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const signalHandlersRef = useRef(
+        new Set<(message: any) => boolean>()
+    );
     const [connected, setConnected] = useState(false);
 
     const [auctionState, setAuctionState] = useState<AuctionState>({
@@ -190,6 +193,15 @@ export const useAuctionWebSocket = ({
     );
 
     const handleJsonMessage = useCallback((data: any) => {
+        let handled = false;
+        signalHandlersRef.current.forEach((handler) => {
+            if (!handled) {
+                handled = handler(data);
+            }
+        });
+        if (handled) {
+            return;
+        }
         console.log("🔍 JSON message received:", data);
 
         // 🟦 Handle AuctionParticipant (new or old)
@@ -467,6 +479,25 @@ export const useAuctionWebSocket = ({
         }
     }, []);
 
+    const sendJsonMessage = useCallback(
+        (payload: unknown) => {
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.send(JSON.stringify(payload));
+            }
+        },
+        []
+    );
+
+    const registerSignalHandler = useCallback(
+        (handler: (message: any) => boolean) => {
+            signalHandlersRef.current.add(handler);
+            return () => {
+                signalHandlersRef.current.delete(handler);
+            };
+        },
+        []
+    );
+
     // Function to change page for sold/unsold players
     const changeSoldPage = useCallback(async (page: number) => {
         if (page === 1) {
@@ -568,5 +599,7 @@ export const useAuctionWebSocket = ({
         sendRTMAmount,
         sendRTMAccept,
         sendRTMCancel,
+        sendJsonMessage,
+        registerSignalHandler,
     };
 };

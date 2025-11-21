@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Wifi, WifiOff, AlertCircle, Gavel, Copy } from "lucide-react";
 import { useAuctionWebSocket } from "../hooks/useAuctionWebSocket";
+import { useAuctionAudio } from "../hooks/useAuctionAudio";
 import { PlayerCard } from "../components/auction/PlayerCard";
 import { ParticipantsList } from "../components/auction/ParticipantsList";
 import { AuctionControls } from "../components/auction/AuctionControls";
@@ -109,15 +110,36 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
 
   // Don't initialize WebSocket until we have participant info
   const shouldConnect = participantId !== null && teamName !== null && !loading;
-  const { connected, auctionState, startAuction, placeBid, pauseAuction, endAuction, changeSoldPage, changeUnsoldPage, sendRTMAmount, sendRTMAccept, sendRTMCancel } =
-    useAuctionWebSocket({
-      roomId,
-      participantId: participantId ?? 0,
-      teamName: teamName ?? "",
-      onConnectionError: (error) => setToast({ message: error, type: "error" }),
-      onMessage: handleMessage,
-      enabled: shouldConnect,
-    });
+  const {
+    connected,
+    auctionState,
+    startAuction,
+    placeBid,
+    pauseAuction,
+    endAuction,
+    changeSoldPage,
+    changeUnsoldPage,
+    sendRTMAmount,
+    sendRTMAccept,
+    sendRTMCancel,
+    sendJsonMessage,
+    registerSignalHandler,
+  } = useAuctionWebSocket({
+    roomId,
+    participantId: participantId ?? 0,
+    teamName: teamName ?? "",
+    onConnectionError: (error) => setToast({ message: error, type: "error" }),
+    onMessage: handleMessage,
+    enabled: shouldConnect,
+  });
+
+  const audioControls = useAuctionAudio({
+    participantId: participantId ?? 0,
+    participants: auctionState.participants,
+    sendSignalMessage: sendJsonMessage,
+    registerSignalHandler,
+    enabled: shouldConnect,
+  });
 
   // Handle RTM dialog "Yes" button
   const handleRTMConfirm = useCallback(() => {
@@ -247,6 +269,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                           participants={auctionState.participants}
                           myParticipantId={participantId}
                           onSelectParticipant={setSelectedParticipant}
+                          audioControls={audioControls}
                       />
                   </div>
               </div>
