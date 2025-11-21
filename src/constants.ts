@@ -36,7 +36,7 @@ export const AUCTION_RULES = [
 ];
 
 export const UPCOMING_FEATURES = [
-  "Introducing RTM soon",
+  "Introducing RTM soon [done] ",
   "No retained players (implementing in future)",
   "Custom bid time configuration",
   "Automatic unsold when everyone clicks not interested",
@@ -46,7 +46,7 @@ export const UPCOMING_FEATURES = [
   "WebRTC implementation for future",
   "Loading profile pictures from email",
   "Foreign player buying limits",
-  "Auction pausing capability",
+  "Auction pausing capability [done]",
 ];
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
