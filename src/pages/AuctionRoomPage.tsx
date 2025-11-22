@@ -138,6 +138,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     participants: auctionState.participants,
     sendSignalMessage: sendJsonMessage,
     registerSignalHandler,
+    connected,
     enabled: shouldConnect,
   });
 
