@@ -32,6 +32,8 @@ export const useAuctionWebSocket = ({
 }: UseAuctionWebSocketProps) => {
   const wsRef = useRef<WebSocket | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const pingRef = useRef<NodeJS.Timeout | null>(null);
+
 
   // For WebRTC / audio signaling
   const signalHandlersRef = useRef(new Set<(message: any) => boolean>());
@@ -62,6 +64,7 @@ export const useAuctionWebSocket = ({
     myParticipantId: participantId,
     auctionStatus: "pending",
   });
+
 
   // ---------- Helpers ----------
 
@@ -102,6 +105,31 @@ export const useAuctionWebSocket = ({
       });
     }, 1000);
   }, []);
+
+
+
+  // ping the server every 25 seconds
+
+  const startPing = useCallback(() => {
+    if (pingRef.current) return;
+  
+    pingRef.current = setInterval(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send("ping");
+        // console.log("PING → server");
+      }
+    }, 25000); // 25 seconds
+  }, []);
+  
+  const stopPing = useCallback(() => {
+    if (pingRef.current) {
+      clearInterval(pingRef.current);
+      pingRef.current = null;
+    }
+  }, []);
+  
+
+
 
   // ---------- Auction participants ----------
 
@@ -524,8 +552,10 @@ export const useAuctionWebSocket = ({
     ws.onopen = () => {
       console.log("✅ WebSocket connected");
       setConnected(true);
+      startPing();          // <— start 25s keepalive ping
       fetchInitialPlayers();
     };
+    
 
     ws.onmessage = (event) => {
       console.log("WS RECEIVED:", event.data);
@@ -539,12 +569,14 @@ export const useAuctionWebSocket = ({
 
     ws.onclose = () => {
       console.log("🔌 WebSocket closed");
+      stopPing();           // <— stop ping
       setConnected(false);
     };
 
     wsRef.current = ws;
 
     return () => {
+      stopPing();           // <— make sure ping stops on unmount
       if (timerRef.current) clearInterval(timerRef.current);
       ws.close();
     };
