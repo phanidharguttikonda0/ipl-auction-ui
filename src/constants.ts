@@ -28,6 +28,7 @@ export const TEAM_COLORS: Record<TeamName, { primary: string; secondary: string;
 
 export const AUCTION_RULES = [
   "Minimum 3 participants required to start auction",
+  "Once auction was created copy the room-id on top and share to your friends, so they can join the auction",
   "Each team must have minimum 15 players in squad",
   "Starting budget: 100 Crores per team",
   "Maximum squad size: 25 players",
@@ -36,14 +37,14 @@ export const AUCTION_RULES = [
 ];
 
 export const UPCOMING_FEATURES = [
-  "Introducing RTM soon [done] ",
+  "Introducing RTM soon [done]",
   "No retained players (implementing in future)",
   "Custom bid time configuration",
   "Automatic unsold when everyone clicks not interested",
   "Managing players into different pools",
   "Auto-allocation after 14 players purchased",
   "Unsold players list and stop current list",
-  "WebRTC implementation for future",
+  "WebRTC implementation for audio communication [done]",
   "Loading profile pictures from email",
   "Foreign player buying limits",
   "Auction pausing capability [done]",
