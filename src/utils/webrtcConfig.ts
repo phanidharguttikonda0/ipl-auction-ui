@@ -1,9 +1,9 @@
 export const iceServers: RTCIceServer[] = [
     { urls: "stun:stun.l.google.com:19302" },
     {
-        urls: "turn:13.127.9.28:3478",
-        username: "turnuser",
-        credential: "turnpassword",
+        urls: "turn:3.108.59.36:3478",
+        username: "phani",
+        credential: "turnpassword123",
     },
 ];
 
