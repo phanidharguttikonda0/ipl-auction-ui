@@ -1,6 +1,7 @@
+// src/pages/AuctionRoomPage.tsx
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Wifi, WifiOff, AlertCircle, Gavel, Copy } from "lucide-react";
+import { ArrowLeft, Wifi, WifiOff, Gavel, Copy } from "lucide-react";
 import { useAuctionWebSocket } from "../hooks/useAuctionWebSocket";
 import { useAuctionAudio } from "../hooks/useAuctionAudio";
 import { PlayerCard } from "../components/auction/PlayerCard";
@@ -24,13 +25,14 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
-    const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(roomId);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1000); // hide in 1 sec
-    };
+  const handleCopy = () => {
+    navigator.clipboard.writeText(roomId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1000); // hide in 1 sec
+  };
+
   const [participantId, setParticipantId] = useState<number | null>(
     state?.participantId ?? null
   );
@@ -70,7 +72,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   }, [navigate]);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
   const [selectedParticipant, setSelectedParticipant] = useState<number | null>(null);
-  
+
   // RTM states
   const [showRTMDialog, setShowRTMDialog] = useState(false);
   const [showRTMAmountInput, setShowRTMAmountInput] = useState(false);
@@ -124,6 +126,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     sendRTMCancel,
     sendJsonMessage,
     registerSignalHandler,
+    sendTextMessage, // NEW
   } = useAuctionWebSocket({
     roomId,
     participantId: participantId ?? 0,
@@ -137,6 +140,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     participantId: participantId ?? 0,
     participants: auctionState.participants,
     sendSignalMessage: sendJsonMessage,
+    sendTextMessage, // pass text sender so audio can send "mute"/"unmute"
     registerSignalHandler,
     connected,
     enabled: shouldConnect,
@@ -195,29 +199,29 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
               >
                 <ArrowLeft className="w-6 h-6 text-gray-400 group-hover:text-white" />
               </button>
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-white">
-                        Auction Room
-                    </h1>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">
+                  Auction Room
+                </h1>
 
-                    <div className="flex items-center gap-2 mt-1">
-                        <button
-                            onClick={handleCopy}
-                            className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 transition text-gray-300"
-                            title="Copy Room ID"
-                        >
-                            <Copy size={16} />
-                        </button>
+                <div className="flex items-center gap-2 mt-1">
+                  <button
+                    onClick={handleCopy}
+                    className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 transition text-gray-300"
+                    title="Copy Room ID"
+                  >
+                    <Copy size={16} />
+                  </button>
 
-                        <p className="text-sm text-gray-400">Room ID: {roomId}</p>
-                        {/* Copied message */}
-                        {copied && (
-                            <span className="text-green-400 text-xs ml-2 animate-fade-in">
-                            Copied!
-                          </span>
-                        )}
-                    </div>
+                  <p className="text-sm text-gray-400">Room ID: {roomId}</p>
+                  {/* Copied message */}
+                  {copied && (
+                    <span className="text-green-400 text-xs ml-2 animate-fade-in">
+                      Copied!
+                    </span>
+                  )}
                 </div>
+              </div>
             </div>
 
             <div className="flex items-center gap-4 flex-wrap">
@@ -261,200 +265,194 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
           />
         )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-              {/* LEFT SIDEBAR (Sticky OK here) */}
-              <div className="lg:col-span-3 order-2 lg:order-1">
-                  <div className="sticky top-24">
-                      <ParticipantsList
-                          participants={auctionState.participants}
-                          myParticipantId={participantId}
-                          onSelectParticipant={setSelectedParticipant}
-                          audioControls={audioControls}
-                      />
-                  </div>
-              </div>
-
-              {/* CENTER (Player card + Controls) — sticky removed */}
-              <div className="lg:col-span-6 order-1 lg:order-2 flex flex-col gap-6">
-
-                  {auctionState.currentPlayer ? (
-                      <PlayerCard
-                          player={auctionState.currentPlayer}
-                          currentBid={auctionState.currentBid}
-                          highestBidder={auctionState.highestBidder}
-                          timerRemaining={auctionState.timerRemaining}
-                      />
-                  ) : (
-                      <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-12 text-center">
-                          <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-700/50 rounded-full mb-4">
-                              <Gavel className="w-8 h-8 text-gray-400" />
-                          </div>
-                          <h3 className="text-xl font-bold text-white mb-2">
-                              {auctionState.auctionStatus === "completed"
-                                  ? "Auction Completed"
-                                  : auctionState.auctionStatus === "stopped"
-                                      ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
-                                          ? "Auction Paused"
-                                          : "Auction Paused"
-                                      : "Waiting to Start"}
-                          </h3>
-                          <p className="text-gray-400">
-                              {auctionState.auctionStatus === "completed"
-                                  ? "Thank you for participating!"
-                                  : auctionState.auctionStatus === "stopped"
-                                      ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
-                                          ? "Auction is paused. Click Start to resume from the last player."
-                                          : "Need minimum 3 participants to continue"
-                                      : "Press Start Auction to begin"}
-                          </p>
-                      </div>
-                  )}
-
-                  <AuctionControls
-                      auctionStatus={auctionState.auctionStatus}
-                      participantCount={auctionState.participants.size}
-                      myBalance={auctionState.myBalance}
-                      currentBid={auctionState.currentBid}
-                      onStart={startAuction}
-                      onBid={placeBid}
-                      onPause={pauseAuction}
-                      onEnd={endAuction}
-                  />
-
-              </div>
-
-              {/* RIGHT SIDEBAR */}
-              <div className="lg:col-span-3 order-3">
-                  <div className="sticky top-24">
-                      <SoldUnsoldList
-                          soldPlayers={auctionState.soldPlayers}
-                          unsoldPlayers={auctionState.unsoldPlayers}
-                          onChangeSoldPage={changeSoldPage}
-                          onChangeUnsoldPage={changeUnsoldPage}
-                      />
-                  </div>
-              </div>
-
-          </div>
-
-      </div>
-        {selectedParticipant && (
-            <TeamDetailsModal
-                participantId={selectedParticipant}
-                onClose={() => setSelectedParticipant(null)}
-            />
-        )}
-
-        {/* RTM Use Dialog */}
-        {showRTMDialog && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
-              <h3 className="text-xl font-bold text-white mb-4">Use Right To Match (RTM)?</h3>
-              <p className="text-gray-300 mb-6">
-                You have the option to use RTM. Would you like to use it?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowRTMDialog(false);
-                    setToast({ message: "RTM declined", type: "info" });
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
-                >
-                  No
-                </button>
-                <button
-                  onClick={handleRTMConfirm}
-                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium"
-                >
-                  Yes
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* RTM Amount Input Dialog */}
-        {showRTMAmountInput && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
-              <h3 className="text-xl font-bold text-white mb-4">Enter RTM Amount</h3>
-              <p className="text-gray-300 mb-4">
-                Current bid: ₹{auctionState.currentBid.toFixed(2)}Cr
-              </p>
-              <p className="text-sm text-gray-400 mb-4">
-                How much do you want to add to the current bid amount?
-              </p>
-              <input
-                type="number"
-                value={rtmAmountInput}
-                onChange={(e) => setRtmAmountInput(e.target.value)}
-                placeholder="Enter amount (e.g., 10.00)"
-                step="0.01"
-                min="0.01"
-                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all mb-4"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleRTMAmountSubmit();
-                  }
-                }}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* LEFT SIDEBAR (Sticky OK here) */}
+          <div className="lg:col-span-3 order-2 lg:order-1">
+            <div className="sticky top-24">
+              <ParticipantsList
+                participants={auctionState.participants}
+                myParticipantId={participantId}
+                onSelectParticipant={setSelectedParticipant}
+                audioControls={audioControls}
               />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowRTMAmountInput(false);
-                    setRtmAmountInput("");
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRTMAmountSubmit}
-                  disabled={!rtmAmountInput || parseFloat(rtmAmountInput) <= 0 || isNaN(parseFloat(rtmAmountInput))}
-                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    !rtmAmountInput || parseFloat(rtmAmountInput) <= 0 || isNaN(parseFloat(rtmAmountInput))
-                      ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                      : "bg-blue-500 hover:bg-blue-600 text-white"
-                  }`}
-                >
-                  Submit
-                </button>
-              </div>
             </div>
           </div>
-        )}
 
-        {/* RTM Accept/Reject Dialog */}
-        {showRTMAcceptDialog && rtmOfferAmount !== null && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
-              <h3 className="text-xl font-bold text-white mb-4">RTM Offer Received</h3>
-              <p className="text-gray-300 mb-4">
-                You have received an RTM offer of <span className="text-green-400 font-bold">₹{rtmOfferAmount.toFixed(2)}Cr</span>
-              </p>
-              <p className="text-sm text-gray-400 mb-6">
-                Do you want to accept this offer?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleRTMCancel}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRTMAccept}
-                  className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors font-medium"
-                >
-                  Accept
-                </button>
+          {/* CENTER (Player card + Controls) — sticky removed */}
+          <div className="lg:col-span-6 order-1 lg:order-2 flex flex-col gap-6">
+            {auctionState.currentPlayer ? (
+              <PlayerCard
+                player={auctionState.currentPlayer}
+                currentBid={auctionState.currentBid}
+                highestBidder={auctionState.highestBidder}
+                timerRemaining={auctionState.timerRemaining}
+              />
+            ) : (
+              <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-12 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-700/50 rounded-full mb-4">
+                  <Gavel className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  {auctionState.auctionStatus === "completed"
+                    ? "Auction Completed"
+                    : auctionState.auctionStatus === "stopped"
+                    ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
+                      ? "Auction Paused"
+                      : "Auction Paused"
+                    : "Waiting to Start"}
+                </h3>
+                <p className="text-gray-400">
+                  {auctionState.auctionStatus === "completed"
+                    ? "Thank you for participating!"
+                    : auctionState.auctionStatus === "stopped"
+                    ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
+                      ? "Auction is paused. Click Start to resume from the last player."
+                      : "Need minimum 3 participants to continue"
+                    : "Press Start Auction to begin"}
+                </p>
               </div>
+            )}
+
+            <AuctionControls
+              auctionStatus={auctionState.auctionStatus}
+              participantCount={auctionState.participants.size}
+              myBalance={auctionState.myBalance}
+              currentBid={auctionState.currentBid}
+              onStart={startAuction}
+              onBid={placeBid}
+              onPause={pauseAuction}
+              onEnd={endAuction}
+            />
+          </div>
+
+          {/* RIGHT SIDEBAR */}
+          <div className="lg:col-span-3 order-3">
+            <div className="sticky top-24">
+              <SoldUnsoldList
+                soldPlayers={auctionState.soldPlayers}
+                unsoldPlayers={auctionState.unsoldPlayers}
+                onChangeSoldPage={changeSoldPage}
+                onChangeUnsoldPage={changeUnsoldPage}
+              />
             </div>
           </div>
-        )}
+        </div>
+      </div>
+
+      {selectedParticipant && (
+        <TeamDetailsModal
+          participantId={selectedParticipant}
+          onClose={() => setSelectedParticipant(null)}
+        />
+      )}
+
+      {/* RTM dialogs ... (unchanged, keep the same markup) */}
+      {showRTMDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Use Right To Match (RTM)?</h3>
+            <p className="text-gray-300 mb-6">
+              You have the option to use RTM. Would you like to use it?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowRTMDialog(false);
+                  setToast({ message: "RTM declined", type: "info" });
+                }}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
+              >
+                No
+              </button>
+              <button
+                onClick={handleRTMConfirm}
+                className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRTMAmountInput && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Enter RTM Amount</h3>
+            <p className="text-gray-300 mb-4">
+              Current bid: ₹{auctionState.currentBid.toFixed(2)}Cr
+            </p>
+            <p className="text-sm text-gray-400 mb-4">
+              How much do you want to add to the current bid amount?
+            </p>
+            <input
+              type="number"
+              value={rtmAmountInput}
+              onChange={(e) => setRtmAmountInput(e.target.value)}
+              placeholder="Enter amount (e.g., 10.00)"
+              step="0.01"
+              min="0.01"
+              className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all mb-4"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleRTMAmountSubmit();
+                }
+              }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowRTMAmountInput(false);
+                  setRtmAmountInput("");
+                }}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRTMAmountSubmit}
+                disabled={!rtmAmountInput || parseFloat(rtmAmountInput) <= 0 || isNaN(parseFloat(rtmAmountInput))}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  !rtmAmountInput || parseFloat(rtmAmountInput) <= 0 || isNaN(parseFloat(rtmAmountInput))
+                    ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-600 text-white"
+                }`}
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRTMAcceptDialog && rtmOfferAmount !== null && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">RTM Offer Received</h3>
+            <p className="text-gray-300 mb-4">
+              You have received an RTM offer of <span className="text-green-400 font-bold">₹{rtmOfferAmount.toFixed(2)}Cr</span>
+            </p>
+            <p className="text-sm text-gray-400 mb-6">
+              Do you want to accept this offer?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleRTMCancel}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRTMAccept}
+                className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors font-medium"
+              >
+                Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
