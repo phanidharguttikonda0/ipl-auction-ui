@@ -1,3 +1,4 @@
+// src/hooks/useAuctionWebSocket.ts
 import { useEffect, useRef, useState, useCallback } from "react";
 import { WS_BASE_URL } from "../constants";
 import { apiClient } from "../services/api";
@@ -34,7 +35,6 @@ export const useAuctionWebSocket = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const pingRef = useRef<NodeJS.Timeout | null>(null);
 
-
   // For WebRTC / audio signaling
   const signalHandlersRef = useRef(new Set<(message: any) => boolean>());
 
@@ -65,9 +65,7 @@ export const useAuctionWebSocket = ({
     auctionStatus: "pending",
   });
 
-
   // ---------- Helpers ----------
-
   const isJsonMessage = useCallback((data: string): boolean => {
     const trimmed = data.trim();
     if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
@@ -106,30 +104,23 @@ export const useAuctionWebSocket = ({
     }, 1000);
   }, []);
 
-
-
   // ping the server every 25 seconds
-
   const startPing = useCallback(() => {
     if (pingRef.current) return;
-  
+
     pingRef.current = setInterval(() => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send("ping");
-        // console.log("PING → server");
       }
     }, 25000); // 25 seconds
   }, []);
-  
+
   const stopPing = useCallback(() => {
     if (pingRef.current) {
       clearInterval(pingRef.current);
       pingRef.current = null;
     }
   }, []);
-  
-
-
 
   // ---------- Auction participants ----------
 
@@ -138,9 +129,7 @@ export const useAuctionWebSocket = ({
       console.log("⚙️ handleAuctionParticipant() called with:", data);
 
       setAuctionState((prev) => {
-        const newParticipants = new Map<number, ParticipantState>(
-          prev.participants,
-        );
+        const newParticipants = new Map<number, ParticipantState>(prev.participants);
 
         newParticipants.set(data.id, {
           participant_id: data.id,
@@ -148,10 +137,10 @@ export const useAuctionWebSocket = ({
           balance: data.balance,
           total_players_brought: data.total_players_brought,
           connected: true,
+          muted: data.muted ?? false, // keep existing if provided
         });
 
-        const myBalance =
-          data.id === participantId ? data.balance : prev.myBalance;
+        const myBalance = data.id === participantId ? data.balance : prev.myBalance;
 
         const nextState = {
           ...prev,
@@ -159,10 +148,7 @@ export const useAuctionWebSocket = ({
           myBalance,
         };
 
-        console.log(
-          "👥 participants after update:",
-          Array.from(newParticipants.values()),
-        );
+        console.log("👥 participants after update:", Array.from(newParticipants.values()));
         return nextState;
       });
 
@@ -183,6 +169,7 @@ export const useAuctionWebSocket = ({
           balance: p.balance,
           total_players_brought: p.total_players_brought,
           connected: true,
+          muted: p.muted ?? false,
         });
       });
 
@@ -249,10 +236,7 @@ export const useAuctionWebSocket = ({
       } else if (data.includes("Auction Stopped Temporarily")) {
         onMessage?.(data);
         setAuctionState((prev) => ({ ...prev, auctionStatus: "stopped" }));
-      } else if (
-        data.includes("Auction was Paused") ||
-        data === "Auction was Paused"
-      ) {
+      } else if (data.includes("Auction was Paused") || data === "Auction was Paused") {
         onMessage?.(data);
         setAuctionState((prev) => ({
           ...prev,
@@ -263,6 +247,35 @@ export const useAuctionWebSocket = ({
           timerRemaining: 0,
         }));
         stopTimer();
+      } else if (data.startsWith("mute-") || data.startsWith("unmute-")) {
+        // New: handle mute/unmute broadcasts
+        const parts = data.split("-");
+        if (parts.length === 2) {
+          const cmd = parts[0];
+          const idStr = parts[1];
+          const id = parseInt(idStr, 10);
+          if (!Number.isNaN(id)) {
+            setAuctionState((prev) => {
+              const newParticipants = new Map(prev.participants);
+              const p = newParticipants.get(id);
+              if (p) {
+                newParticipants.set(id, { ...p, muted: cmd === "mute" });
+              } else {
+                // if participant not present, create a minimal entry (unlikely) 
+                newParticipants.set(id, {
+                  participant_id: id,
+                  team_name: `#${id}`,
+                  balance: 0,
+                  total_players_brought: 0,
+                  connected: true,
+                  muted: cmd === "mute",
+                });
+              }
+              return { ...prev, participants: newParticipants };
+            });
+            onMessage?.(cmd === "mute" ? `Participant ${id} muted` : `Participant ${id} unmuted`);
+          }
+        }
       } else {
         onMessage?.(data);
       }
@@ -346,9 +359,7 @@ export const useAuctionWebSocket = ({
         }
 
         const myBalance =
-          data.team_name === teamName
-            ? data.remaining_balance
-            : prev.myBalance;
+          data.team_name === teamName ? data.remaining_balance : prev.myBalance;
 
         return {
           ...prev,
@@ -495,7 +506,6 @@ export const useAuctionWebSocket = ({
   );
 
   // ---------- Initial sold/unsold players ----------
-
   const fetchInitialPlayers = useCallback(async () => {
     try {
       setAuctionState((prev) => ({
@@ -533,7 +543,6 @@ export const useAuctionWebSocket = ({
   }, [roomId]);
 
   // ---------- WebSocket lifecycle ----------
-
   useEffect(() => {
     if (!enabled || participantId <= 0 || !teamName) {
       return;
@@ -552,10 +561,9 @@ export const useAuctionWebSocket = ({
     ws.onopen = () => {
       console.log("✅ WebSocket connected");
       setConnected(true);
-      startPing();          // <— start 25s keepalive ping
+      startPing(); // <— start 25s keepalive ping
       fetchInitialPlayers();
     };
-    
 
     ws.onmessage = (event) => {
       console.log("WS RECEIVED:", event.data);
@@ -569,14 +577,14 @@ export const useAuctionWebSocket = ({
 
     ws.onclose = () => {
       console.log("🔌 WebSocket closed");
-      stopPing();           // <— stop ping
+      stopPing(); // <— stop ping
       setConnected(false);
     };
 
     wsRef.current = ws;
 
     return () => {
-      stopPing();           // <— make sure ping stops on unmount
+      stopPing();
       if (timerRef.current) clearInterval(timerRef.current);
       ws.close();
     };
@@ -584,7 +592,6 @@ export const useAuctionWebSocket = ({
   }, [roomId, participantId, teamName, enabled, fetchInitialPlayers]);
 
   // ---------- Outgoing messages ----------
-
   const sendMessage = useCallback((msg: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       console.log("WS SENDING (text):", msg);
@@ -614,40 +621,25 @@ export const useAuctionWebSocket = ({
   );
 
   // ---------- Pagination helpers ----------
-
   const changeSoldPage = useCallback(
     async (page: number) => {
       if (page === 1) {
-        setAuctionState((prev) => ({
-          ...prev,
-          soldPlayers: { ...prev.soldPlayers, currentPage: 1 },
-        }));
+        setAuctionState((prev) => ({ ...prev, soldPlayers: { ...prev.soldPlayers, currentPage: 1 } }));
         return;
       }
 
       if (page === 2) {
-        setAuctionState((prev) => ({
-          ...prev,
-          soldPlayers: { ...prev.soldPlayers, loading: true },
-        }));
+        setAuctionState((prev) => ({ ...prev, soldPlayers: { ...prev.soldPlayers, loading: true } }));
 
         try {
           const players = await apiClient.getSoldPlayers(roomId, 2, 10);
           setAuctionState((prev) => ({
             ...prev,
-            soldPlayers: {
-              ...prev.soldPlayers,
-              page2: players,
-              currentPage: 2,
-              loading: false,
-            },
+            soldPlayers: { ...prev.soldPlayers, page2: players, currentPage: 2, loading: false },
           }));
         } catch (error) {
           console.error("Failed to fetch sold players page 2:", error);
-          setAuctionState((prev) => ({
-            ...prev,
-            soldPlayers: { ...prev.soldPlayers, loading: false },
-          }));
+          setAuctionState((prev) => ({ ...prev, soldPlayers: { ...prev.soldPlayers, loading: false } }));
         }
       }
     },
@@ -657,36 +649,22 @@ export const useAuctionWebSocket = ({
   const changeUnsoldPage = useCallback(
     async (page: number) => {
       if (page === 1) {
-        setAuctionState((prev) => ({
-          ...prev,
-          unsoldPlayers: { ...prev.unsoldPlayers, currentPage: 1 },
-        }));
+        setAuctionState((prev) => ({ ...prev, unsoldPlayers: { ...prev.unsoldPlayers, currentPage: 1 } }));
         return;
       }
 
       if (page === 2) {
-        setAuctionState((prev) => ({
-          ...prev,
-          unsoldPlayers: { ...prev.unsoldPlayers, loading: true },
-        }));
+        setAuctionState((prev) => ({ ...prev, unsoldPlayers: { ...prev.unsoldPlayers, loading: true } }));
 
         try {
           const players = await apiClient.getUnsoldPlayers(roomId, 2, 10);
           setAuctionState((prev) => ({
             ...prev,
-            unsoldPlayers: {
-              ...prev.unsoldPlayers,
-              page2: players,
-              currentPage: 2,
-              loading: false,
-            },
+            unsoldPlayers: { ...prev.unsoldPlayers, page2: players, currentPage: 2, loading: false },
           }));
         } catch (error) {
           console.error("Failed to fetch unsold players page 2:", error);
-          setAuctionState((prev) => ({
-            ...prev,
-            unsoldPlayers: { ...prev.unsoldPlayers, loading: false },
-          }));
+          setAuctionState((prev) => ({ ...prev, unsoldPlayers: { ...prev.unsoldPlayers, loading: false } }));
         }
       }
     },
@@ -694,7 +672,6 @@ export const useAuctionWebSocket = ({
   );
 
   // ---------- RTM helpers ----------
-
   const sendRTMAmount = useCallback(
     (amount: number) => {
       sendMessage(`rtm-${amount.toFixed(2)}`);
@@ -711,7 +688,6 @@ export const useAuctionWebSocket = ({
   }, [sendMessage]);
 
   // ---------- Public API ----------
-
   return {
     connected,
     auctionState,
@@ -724,7 +700,8 @@ export const useAuctionWebSocket = ({
     sendRTMAmount,
     sendRTMAccept,
     sendRTMCancel,
-    sendJsonMessage,       // used by useAuctionAudio
+    sendJsonMessage, // used by useAuctionAudio for signaling (offer/answer/ice)
     registerSignalHandler, // used by useAuctionAudio
+    sendTextMessage: sendMessage, // new: used for plain text like "mute"/"unmute"/"rtm-..."
   };
 };

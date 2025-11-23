@@ -106,6 +106,7 @@ export interface ParticipantState {
   balance: number;
   total_players_brought: number;
   connected: boolean;
+  muted?: boolean;
 }
 
 export interface SoldUnsoldState {

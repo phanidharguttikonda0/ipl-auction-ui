@@ -1,3 +1,4 @@
+// src/components/auction/ParticipantsList.tsx
 import {
   DollarSign,
   Users,
@@ -89,8 +90,8 @@ export const ParticipantsList = ({
           const colors = TEAM_COLORS[participant.team_name as TeamName];
           const isMe = participant.participant_id === myParticipantId;
 
-          // Local-only mute: only "me" can be muted
-          const muted = isMe ? localMuted : false;
+          // Local-only mute: only "me" uses localMuted; others use participant.muted
+          const muted = isMe ? localMuted : !!participant.muted;
 
           return (
             <div
@@ -141,7 +142,7 @@ export const ParticipantsList = ({
                         ? "border-emerald-500/50 text-emerald-100"
                         : "border-gray-600 text-gray-300"
                     }`}
-                    title={isMe ? (muted ? "You are muted" : "You are live") : "This participant is live"}
+                    title={isMe ? (muted ? "You are muted" : "You are live") : (muted ? "This participant is muted" : "This participant is live")}
                   >
                     {muted ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
                     {muted ? "Muted" : "Live"}
