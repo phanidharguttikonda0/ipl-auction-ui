@@ -23,6 +23,7 @@ export interface AuctionRoom {
 export interface Participant {
   participant_id: number;
   team_name: string;
+  user_id: number;
 }
 
 export interface TeamDetails {

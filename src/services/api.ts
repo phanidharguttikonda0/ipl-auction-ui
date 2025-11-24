@@ -235,3 +235,52 @@ export const apiClient = {
     return response.json();
   },
 };
+
+export function getUserIdFromAuthToken(): number | null {
+  try {
+    const rawToken = getAuthToken(); // your existing function
+    console.log(rawToken, " here is the token");
+    if (!rawToken) return null;
+
+    // Remove "Bearer "
+    const token = rawToken.startsWith("Bearer ")
+      ? rawToken.split(" ")[1]
+      : rawToken;
+
+    console.log(token, " cleaned token");
+
+    // Split JWT into 3 parts
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      console.error("Invalid JWT format:", token);
+      return null;
+    }
+
+    // Only decode the payload (2nd part)
+    const payloadBase64Url = parts[1];
+    console.log(payloadBase64Url, " payload base64url");
+
+    // Convert base64url → base64
+    const payloadBase64 = payloadBase64Url
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(payloadBase64Url.length + (4 - (payloadBase64Url.length % 4)) % 4, "=");
+
+    console.log(payloadBase64, " normalized payload base64");
+
+    // Decode token payload
+    const decodedPayload = atob(payloadBase64);
+    console.log(decodedPayload, " decoded payload");
+
+    // Parse JSON
+    const authObj = JSON.parse(decodedPayload);
+    console.log(authObj, " here is the auth obj");
+
+    return authObj.user_id ?? null;
+
+  } catch (err) {
+    console.error("JWT decode error:", err);
+    return null;
+  }
+}
+
