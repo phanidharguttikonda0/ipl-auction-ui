@@ -12,6 +12,8 @@ import { Toast, type ToastType } from "../components/Toast";
 import { TeamDetailsModal } from "../components/TeamDetailsModal.tsx";
 import { apiClient } from "../services/api";
 
+const RTM_RESPONSE_TIMEOUT = 17;
+
 interface AuctionRoomPageProps {
   roomId: string;
 }
@@ -79,11 +81,19 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const [rtmAmountInput, setRtmAmountInput] = useState("");
   const [showRTMAcceptDialog, setShowRTMAcceptDialog] = useState(false);
   const [rtmOfferAmount, setRtmOfferAmount] = useState<number | null>(null);
+  const [rtmResponseSecondsLeft, setRtmResponseSecondsLeft] = useState(0);
+  const [isRtmTimerActive, setIsRtmTimerActive] = useState(false);
+  const [rtmAcceptSecondsLeft, setRtmAcceptSecondsLeft] = useState(0);
+  const [isRtmAcceptTimerActive, setIsRtmAcceptTimerActive] = useState(false);
 
   const handleMessage = useCallback((message: string) => {
     // Handle "Use RTM" message
     if (message === "Use RTM" || message.includes("Use RTM")) {
       setShowRTMDialog(true);
+      setShowRTMAmountInput(false);
+      setRtmAmountInput("");
+      setRtmResponseSecondsLeft(RTM_RESPONSE_TIMEOUT);
+      setIsRtmTimerActive(true);
       return;
     }
 
@@ -94,6 +104,8 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
       if (!isNaN(amount)) {
         setRtmOfferAmount(amount);
         setShowRTMAcceptDialog(true);
+        setRtmAcceptSecondsLeft(RTM_RESPONSE_TIMEOUT);
+        setIsRtmAcceptTimerActive(true);
       }
       return;
     }
@@ -147,6 +159,31 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     enabled: shouldConnect,
   });
 
+  useEffect(() => {
+    if (!isRtmTimerActive) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setRtmResponseSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalId);
+          setIsRtmTimerActive(false);
+          if (showRTMDialog || showRTMAmountInput) {
+            setShowRTMDialog(false);
+            setShowRTMAmountInput(false);
+            setRtmAmountInput("");
+            setToast({ message: "RTM response timed out", type: "info" });
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [isRtmTimerActive, showRTMDialog, showRTMAmountInput, setToast]);
+
   // Handle RTM dialog "Yes" button
   const handleRTMConfirm = useCallback(() => {
     setShowRTMDialog(false);
@@ -160,15 +197,42 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
       sendRTMAmount(amount);
       setShowRTMAmountInput(false);
       setRtmAmountInput("");
+      setIsRtmTimerActive(false);
       setToast({ message: `RTM amount of ₹${amount.toFixed(2)}Cr sent`, type: "info" });
     }
   }, [rtmAmountInput, sendRTMAmount]);
+
+  useEffect(() => {
+    if (!isRtmAcceptTimerActive) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setRtmAcceptSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalId);
+          setIsRtmAcceptTimerActive(false);
+          if (showRTMAcceptDialog) {
+            setShowRTMAcceptDialog(false);
+            setRtmOfferAmount(null);
+            setToast({ message: "RTM offer response timed out", type: "info" });
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [isRtmAcceptTimerActive, showRTMAcceptDialog]);
 
   // Handle RTM accept
   const handleRTMAccept = useCallback(() => {
     sendRTMAccept();
     setShowRTMAcceptDialog(false);
     setRtmOfferAmount(null);
+    setIsRtmTimerActive(false);
+    setIsRtmAcceptTimerActive(false);
     setToast({ message: "RTM offer accepted", type: "success" });
   }, [sendRTMAccept]);
 
@@ -177,6 +241,8 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     sendRTMCancel();
     setShowRTMAcceptDialog(false);
     setRtmOfferAmount(null);
+    setIsRtmTimerActive(false);
+    setIsRtmAcceptTimerActive(false);
     setToast({ message: "RTM offer cancelled", type: "info" });
   }, [sendRTMCancel]);
 
@@ -356,10 +422,17 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
             <p className="text-gray-300 mb-6">
               You have the option to use RTM. Would you like to use it?
             </p>
+            {isRtmTimerActive && (
+              <p className="text-sm text-gray-400 mb-4">
+                Auto closing in {rtmResponseSecondsLeft}s
+              </p>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowRTMDialog(false);
+                  setIsRtmTimerActive(false);
+                  setRtmResponseSecondsLeft(0);
                   setToast({ message: "RTM declined", type: "info" });
                 }}
                 className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
@@ -387,6 +460,11 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
             <p className="text-sm text-gray-400 mb-4">
               How much do you want to add to the current bid amount?
             </p>
+            {isRtmTimerActive && (
+              <p className="text-sm text-gray-400 mb-4">
+                Auto closing in {rtmResponseSecondsLeft}s
+              </p>
+            )}
             <input
               type="number"
               value={rtmAmountInput}
@@ -407,6 +485,8 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                 onClick={() => {
                   setShowRTMAmountInput(false);
                   setRtmAmountInput("");
+                  setIsRtmTimerActive(false);
+                  setRtmResponseSecondsLeft(0);
                 }}
                 className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
               >
@@ -438,6 +518,11 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
             <p className="text-sm text-gray-400 mb-6">
               Do you want to accept this offer?
             </p>
+            {isRtmAcceptTimerActive && (
+              <p className="text-sm text-gray-400 mb-6">
+                Auto closing in {rtmAcceptSecondsLeft}s
+              </p>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={handleRTMCancel}
