@@ -127,6 +127,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     sendJsonMessage,
     registerSignalHandler,
     sendTextMessage, // NEW
+    timerRemaining, // the remaining time for the current player to bid 
   } = useAuctionWebSocket({
     roomId,
     participantId: participantId ?? 0,
@@ -322,6 +323,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
               onBid={placeBid}
               onPause={pauseAuction}
               onEnd={endAuction}
+              timerRemaining={timerRemaining}
             />
           </div>
 

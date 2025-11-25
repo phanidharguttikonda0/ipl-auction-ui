@@ -11,6 +11,7 @@ interface AuctionControlsProps {
   onBid: () => void;
   onPause: () => void;
   onEnd: () => void;
+  timerRemaining: number;
 }
 
 export const AuctionControls = ({
@@ -22,6 +23,7 @@ export const AuctionControls = ({
   onBid,
   onPause,
   onEnd,
+  timerRemaining,
 }: AuctionControlsProps) => {
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const [endConfirmText, setEndConfirmText] = useState("");
@@ -33,7 +35,9 @@ export const AuctionControls = ({
   const canBid =
     auctionStatus === "in_progress" &&
     participantCount >= 3 &&
-    myBalance >= currentBid;
+    myBalance >= currentBid
+    && timerRemaining > 0;
+    ;
   const isStopped = auctionStatus === "stopped";
 
   return (
@@ -60,19 +64,19 @@ export const AuctionControls = ({
           </p>
         )}
 
-        <button
-          onClick={onBid}
-          disabled={!canBid}
-          className={`w-full py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
-            canBid
-              ? "bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white shadow-lg hover:shadow-blue-500/50"
-              : "bg-gray-700 text-gray-500 cursor-not-allowed"
-          }`}
-        >
-          <Gavel className="w-5 h-5" />
-          Place Bid
-        </button>
-
+      <button
+        onClick={onBid}
+        disabled={!canBid}
+        className={`w-full py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+          canBid
+            ? "bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white shadow-lg hover:shadow-blue-500/50"
+            : "bg-gray-700 text-gray-500 cursor-not-allowed"
+        }`}
+      >
+        <Gavel className="w-5 h-5" />
+        Place Bid
+      </button>
+          
         {!canBid && myBalance < currentBid && auctionStatus === "in_progress" && (
           <p className="text-xs text-red-400 text-center">
             Insufficient balance to bid

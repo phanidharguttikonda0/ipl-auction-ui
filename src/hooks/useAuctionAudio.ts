@@ -83,6 +83,41 @@ export const useAuctionAudio = ({
     });
   }, []);
 
+
+  useEffect(() => {
+  const handleBeforeUnload = () => {
+    console.log("[audio] Refresh → cleanup local stream + peers");
+
+    peersRef.current.forEach(pc => pc.close());
+    peersRef.current.clear();
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+    }
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+}, []);
+useEffect(() => {
+  const handleBeforeUnload = () => {
+    console.log("[audio] Refresh → cleanup local stream + peers");
+
+    peersRef.current.forEach(pc => pc.close());
+    peersRef.current.clear();
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+    }
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+}, []);
+
+
   // -------------------------------------
   // CREATE PEER CONNECTION
   // -------------------------------------

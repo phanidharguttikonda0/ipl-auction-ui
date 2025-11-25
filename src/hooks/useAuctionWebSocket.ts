@@ -65,6 +65,17 @@ export const useAuctionWebSocket = ({
     auctionStatus: "pending",
   });
 
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log("🔌 Refresh/unload → closing WS cleanly");
+      wsRef.current?.close(1000, "Page refresh");
+    };
+  
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+  
+
   // ---------- Helpers ----------
   const isJsonMessage = useCallback((data: string): boolean => {
     const trimmed = data.trim();
@@ -703,5 +714,6 @@ export const useAuctionWebSocket = ({
     sendJsonMessage, // used by useAuctionAudio for signaling (offer/answer/ice)
     registerSignalHandler, // used by useAuctionAudio
     sendTextMessage: sendMessage, // new: used for plain text like "mute"/"unmute"/"rtm-..."
+    timerRemaining: auctionState.timerRemaining, // the remaining time for the current player to bid 
   };
 };
