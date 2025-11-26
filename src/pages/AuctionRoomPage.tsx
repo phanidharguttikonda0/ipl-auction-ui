@@ -85,6 +85,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const [isRtmTimerActive, setIsRtmTimerActive] = useState(false);
   const [rtmAcceptSecondsLeft, setRtmAcceptSecondsLeft] = useState(0);
   const [isRtmAcceptTimerActive, setIsRtmAcceptTimerActive] = useState(false);
+  const [hasSkippedCurrentPlayer, setHasSkippedCurrentPlayer] = useState(false);
 
   const handleMessage = useCallback((message: string) => {
     // Handle "Use RTM" message
@@ -136,6 +137,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     sendRTMAmount,
     sendRTMAccept,
     sendRTMCancel,
+    sendSkip,
     sendJsonMessage,
     registerSignalHandler,
     sendTextMessage, // NEW
@@ -158,6 +160,10 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     connected,
     enabled: shouldConnect,
   });
+
+  useEffect(() => {
+    setHasSkippedCurrentPlayer(false);
+  }, [auctionState.currentPlayer?.id]);
 
   useEffect(() => {
     if (!isRtmTimerActive) {
@@ -245,6 +251,15 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     setIsRtmAcceptTimerActive(false);
     setToast({ message: "RTM offer cancelled", type: "info" });
   }, [sendRTMCancel]);
+
+  const handleSkip = useCallback(() => {
+    if (hasSkippedCurrentPlayer) {
+      return;
+    }
+    sendSkip();
+    setHasSkippedCurrentPlayer(true);
+    setToast({ message: "You skipped this player", type: "info" });
+  }, [hasSkippedCurrentPlayer, sendSkip]);
 
   if (loading || participantId === null || teamName === null) {
     return (
@@ -387,9 +402,11 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
               currentBid={auctionState.currentBid}
               onStart={startAuction}
               onBid={placeBid}
+              onSkip={handleSkip}
               onPause={pauseAuction}
               onEnd={endAuction}
               timerRemaining={timerRemaining}
+              disableBidActions={hasSkippedCurrentPlayer}
             />
           </div>
 
