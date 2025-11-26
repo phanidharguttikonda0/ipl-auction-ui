@@ -219,7 +219,10 @@ export const useAuctionWebSocket = ({
             base_price: playerToUse.base_price,
           };
 
-          const newPage1 = [unsoldPlayer, ...prev.unsoldPlayers.page1];
+          const newPage1: UnSoldPlayerOutput[] = [
+            unsoldPlayer,
+            ...(prev.unsoldPlayers.page1 as UnSoldPlayerOutput[]),
+          ];
           if (newPage1.length > 10) {
             newPage1.pop();
           }
@@ -364,7 +367,10 @@ export const useAuctionWebSocket = ({
           team_name: data.team_name,
         };
 
-        const newPage1 = [soldPlayer, ...prev.soldPlayers.page1];
+        const newPage1: SoldPlayerOutput[] = [
+          soldPlayer,
+          ...(prev.soldPlayers.page1 as SoldPlayerOutput[]),
+        ];
         if (newPage1.length > 10) {
           newPage1.pop();
         }
@@ -698,6 +704,10 @@ export const useAuctionWebSocket = ({
     sendMessage("rtm-cancel");
   }, [sendMessage]);
 
+  const sendSkip = useCallback(() => {
+    sendMessage("skip");
+  }, [sendMessage]);
+
   // ---------- Public API ----------
   return {
     connected,
@@ -711,6 +721,7 @@ export const useAuctionWebSocket = ({
     sendRTMAmount,
     sendRTMAccept,
     sendRTMCancel,
+    sendSkip,
     sendJsonMessage, // used by useAuctionAudio for signaling (offer/answer/ice)
     registerSignalHandler, // used by useAuctionAudio
     sendTextMessage: sendMessage, // new: used for plain text like "mute"/"unmute"/"rtm-..."

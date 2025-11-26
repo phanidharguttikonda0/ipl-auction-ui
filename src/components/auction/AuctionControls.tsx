@@ -9,9 +9,11 @@ interface AuctionControlsProps {
   currentBid: number;
   onStart: () => void;
   onBid: () => void;
+  onSkip: () => void;
   onPause: () => void;
   onEnd: () => void;
   timerRemaining: number;
+  disableBidActions: boolean;
 }
 
 export const AuctionControls = ({
@@ -21,9 +23,11 @@ export const AuctionControls = ({
   currentBid,
   onStart,
   onBid,
+  onSkip,
   onPause,
   onEnd,
   timerRemaining,
+  disableBidActions,
 }: AuctionControlsProps) => {
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const [endConfirmText, setEndConfirmText] = useState("");
@@ -32,12 +36,13 @@ export const AuctionControls = ({
   const canStart = participantCount >= 3 && (auctionStatus === "pending" || auctionStatus === "stopped");
   const canResume = auctionStatus === "stopped";
   const canPause = auctionStatus === "in_progress";
-  const canBid =
+  const canBidBase =
     auctionStatus === "in_progress" &&
     participantCount >= 3 &&
-    myBalance >= currentBid
-    && timerRemaining > 0;
-    ;
+    myBalance >= currentBid &&
+    timerRemaining > 0;
+  const canBid = canBidBase && !disableBidActions;
+  const canSkip = auctionStatus === "in_progress" && timerRemaining > 0 && !disableBidActions;
   const isStopped = auctionStatus === "stopped";
 
   return (
@@ -76,6 +81,18 @@ export const AuctionControls = ({
         <Gavel className="w-5 h-5" />
         Place Bid
       </button>
+
+        <button
+          onClick={onSkip}
+          disabled={!canSkip}
+          className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+            canSkip
+              ? "bg-gray-100/10 hover:bg-gray-100/20 border border-gray-100/30 text-white"
+              : "bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-700"
+          }`}
+        >
+          Skip
+        </button>
           
         {!canBid && myBalance < currentBid && auctionStatus === "in_progress" && (
           <p className="text-xs text-red-400 text-center">
