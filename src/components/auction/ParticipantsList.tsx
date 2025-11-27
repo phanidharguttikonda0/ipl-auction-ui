@@ -65,11 +65,10 @@ export const ParticipantsList = ({
           type="button"
           onClick={toggleMute}
           disabled={!isJoined}
-          className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition ${
-            localMuted
+          className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition ${localMuted
               ? "border-red-500/60 text-red-200"
               : "border-emerald-500/60 text-emerald-200"
-          } ${!isJoined ? "opacity-40 cursor-not-allowed" : "hover:bg-white/5"}`}
+            } ${!isJoined ? "opacity-40 cursor-not-allowed" : "hover:bg-white/5"}`}
           title={localMuted ? "Unmute microphone" : "Mute microphone"}
         >
           {localMuted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
@@ -96,13 +95,12 @@ export const ParticipantsList = ({
           return (
             <div
               key={participant.participant_id}
-              className={`p-4 rounded-lg border transition ${
-                isMe
+              className={`p-4 rounded-lg border transition ${isMe
                   ? muted
                     ? "border-red-500/60 bg-red-500/5"
                     : "border-blue-500/50 bg-blue-500/5"
                   : "border-gray-700 bg-gray-900/40"
-              }`}
+                }`}
             >
               {/* Title Row */}
               <div className="flex items-start justify-between gap-3 mb-3">
@@ -135,13 +133,12 @@ export const ParticipantsList = ({
 
                   {/* Mic Status */}
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
-                      muted
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${muted
                         ? "border-red-500/50 text-red-200"
                         : isMe
-                        ? "border-emerald-500/50 text-emerald-100"
-                        : "border-gray-600 text-gray-300"
-                    }`}
+                          ? "border-emerald-500/50 text-emerald-100"
+                          : "border-gray-600 text-gray-300"
+                      }`}
                     title={isMe ? (muted ? "You are muted" : "You are live") : (muted ? "This participant is muted" : "This participant is live")}
                   >
                     {muted ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
@@ -151,7 +148,7 @@ export const ParticipantsList = ({
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-3 gap-2 text-sm">
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-3 h-3 text-green-400" />
                   <div>
@@ -168,6 +165,16 @@ export const ParticipantsList = ({
                     <p className="text-xs text-gray-400">Players</p>
                     <p className="text-white font-semibold">
                       {participant.total_players_brought}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Shield className="w-3 h-3 text-orange-400" />
+                  <div>
+                    <p className="text-xs text-gray-400">RTMs</p>
+                    <p className="text-white font-semibold">
+                      {participant.remaining_rtms}
                     </p>
                   </div>
                 </div>
