@@ -79,6 +79,7 @@ export interface SoldPlayerMessage {
   team_name: string;
   sold_price: number;
   remaining_balance: number;
+  remaining_rtms: number;
 }
 
 export interface NewJoinerMessage {
@@ -106,6 +107,8 @@ export interface ParticipantState {
   team_name: string;
   balance: number;
   total_players_brought: number;
+  remaining_rtms: number;
+  is_bot: boolean;
   connected: boolean;
   muted?: boolean;
 }

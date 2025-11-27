@@ -70,11 +70,11 @@ export const useAuctionWebSocket = ({
       console.log("🔌 Refresh/unload → closing WS cleanly");
       wsRef.current?.close(1000, "Page refresh");
     };
-  
+
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
-  
+
 
   // ---------- Helpers ----------
   const isJsonMessage = useCallback((data: string): boolean => {
@@ -147,6 +147,8 @@ export const useAuctionWebSocket = ({
           team_name: data.team_name,
           balance: data.balance,
           total_players_brought: data.total_players_brought,
+          remaining_rtms: data.remaining_rtms ?? 0,
+          is_bot: data.is_bot ?? false,
           connected: true,
           muted: data.muted ?? false, // keep existing if provided
         });
@@ -179,6 +181,8 @@ export const useAuctionWebSocket = ({
           team_name: p.team_name,
           balance: p.balance,
           total_players_brought: p.total_players_brought,
+          remaining_rtms: p.remaining_rtms ?? 0,
+          is_bot: p.is_bot ?? false,
           connected: true,
           muted: p.muted ?? false,
         });
@@ -281,6 +285,8 @@ export const useAuctionWebSocket = ({
                   team_name: `#${id}`,
                   balance: 0,
                   total_players_brought: 0,
+                  remaining_rtms: 0,
+                  is_bot: false,
                   connected: true,
                   muted: cmd === "mute",
                 });
@@ -339,6 +345,7 @@ export const useAuctionWebSocket = ({
             ...participant,
             balance: data.remaining_balance,
             total_players_brought: participant.total_players_brought + 1,
+            remaining_rtms: data.remaining_rtms ?? participant.remaining_rtms,
           });
         }
 
