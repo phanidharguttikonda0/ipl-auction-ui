@@ -66,8 +66,8 @@ export const ParticipantsList = ({
           onClick={toggleMute}
           disabled={!isJoined}
           className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition ${localMuted
-              ? "border-red-500/60 text-red-200"
-              : "border-emerald-500/60 text-emerald-200"
+            ? "border-red-500/60 text-red-200"
+            : "border-emerald-500/60 text-emerald-200"
             } ${!isJoined ? "opacity-40 cursor-not-allowed" : "hover:bg-white/5"}`}
           title={localMuted ? "Unmute microphone" : "Mute microphone"}
         >
@@ -89,17 +89,17 @@ export const ParticipantsList = ({
           const colors = TEAM_COLORS[participant.team_name as TeamName];
           const isMe = participant.participant_id === myParticipantId;
 
-          // Local-only mute: only "me" uses localMuted; others use participant.muted
-          const muted = isMe ? localMuted : !!participant.muted;
+          // Local-only mute: only "me" uses localMuted; others use !participant.is_unmuted
+          const muted = isMe ? localMuted : !participant.is_unmuted;
 
           return (
             <div
               key={participant.participant_id}
               className={`p-4 rounded-lg border transition ${isMe
-                  ? muted
-                    ? "border-red-500/60 bg-red-500/5"
-                    : "border-blue-500/50 bg-blue-500/5"
-                  : "border-gray-700 bg-gray-900/40"
+                ? muted
+                  ? "border-red-500/60 bg-red-500/5"
+                  : "border-blue-500/50 bg-blue-500/5"
+                : "border-gray-700 bg-gray-900/40"
                 }`}
             >
               {/* Title Row */}
@@ -134,10 +134,10 @@ export const ParticipantsList = ({
                   {/* Mic Status */}
                   <span
                     className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${muted
-                        ? "border-red-500/50 text-red-200"
-                        : isMe
-                          ? "border-emerald-500/50 text-emerald-100"
-                          : "border-gray-600 text-gray-300"
+                      ? "border-red-500/50 text-red-200"
+                      : isMe
+                        ? "border-emerald-500/50 text-emerald-100"
+                        : "border-gray-600 text-gray-300"
                       }`}
                     title={isMe ? (muted ? "You are muted" : "You are live") : (muted ? "This participant is muted" : "This participant is live")}
                   >
