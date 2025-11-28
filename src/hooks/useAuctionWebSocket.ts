@@ -150,7 +150,7 @@ export const useAuctionWebSocket = ({
           remaining_rtms: data.remaining_rtms ?? 0,
           is_bot: data.is_bot ?? false,
           connected: true,
-          muted: data.muted ?? false, // keep existing if provided
+          is_unmuted: data.is_unmuted ?? false,
         });
 
         const myBalance = data.id === participantId ? data.balance : prev.myBalance;
@@ -184,7 +184,7 @@ export const useAuctionWebSocket = ({
           remaining_rtms: p.remaining_rtms ?? 0,
           is_bot: p.is_bot ?? false,
           connected: true,
-          muted: p.muted ?? false,
+          is_unmuted: p.is_unmuted ?? false,
         });
       });
 
@@ -277,7 +277,7 @@ export const useAuctionWebSocket = ({
               const newParticipants = new Map(prev.participants);
               const p = newParticipants.get(id);
               if (p) {
-                newParticipants.set(id, { ...p, muted: cmd === "mute" });
+                newParticipants.set(id, { ...p, is_unmuted: cmd === "unmute" });
               } else {
                 // if participant not present, create a minimal entry (unlikely) 
                 newParticipants.set(id, {
@@ -288,7 +288,7 @@ export const useAuctionWebSocket = ({
                   remaining_rtms: 0,
                   is_bot: false,
                   connected: true,
-                  muted: cmd === "mute",
+                  is_unmuted: cmd === "unmute",
                 });
               }
               return { ...prev, participants: newParticipants };

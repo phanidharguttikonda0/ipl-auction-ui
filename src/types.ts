@@ -110,7 +110,7 @@ export interface ParticipantState {
   remaining_rtms: number;
   is_bot: boolean;
   connected: boolean;
-  muted?: boolean;
+  is_unmuted: boolean;
 }
 
 export interface SoldUnsoldState {
