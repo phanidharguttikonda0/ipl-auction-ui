@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Calendar,
   Users as UsersIcon,
   CopyIcon,
@@ -29,6 +30,8 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
     null
   );
   const [copiedRoom, setCopiedRoom] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PER_PAGE = 10;
 
   const copyToClipboard = async (roomId: string) => {
     await navigator.clipboard.writeText(roomId);
@@ -41,18 +44,19 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
 
   useEffect(() => {
     loadAuctions();
-  }, []);
+  }, [currentPage]);
 
   const loadAuctions = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await apiClient.getAuctionsPlayed();
+      const data = await apiClient.getAuctionsPlayed(currentPage, PER_PAGE);
       setAuctions(data);
     } catch (error) {
       console.error("Failed to load auctions:", error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPage]);
 
   const toggleAuction = useCallback(
     async (roomId: string) => {
@@ -94,7 +98,35 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
   return (
     <>
       <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-colors">
-        <h2 className="text-lg font-bold text-white mb-4">Auction History</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-white">Auction History</h2>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1 || loading}
+              className={`p-1 rounded transition-colors ${currentPage === 1 || loading
+                  ? "text-gray-600 cursor-not-allowed"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700"
+                }`}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="text-sm text-gray-400 font-medium">
+              Page {currentPage}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => p + 1)}
+              disabled={auctions.length < PER_PAGE || loading}
+              className={`p-1 rounded transition-colors ${auctions.length < PER_PAGE || loading
+                  ? "text-gray-600 cursor-not-allowed"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700"
+                }`}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
         {auctions.map((auction) => (
           <div

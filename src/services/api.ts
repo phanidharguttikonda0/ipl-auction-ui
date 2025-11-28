@@ -51,20 +51,20 @@ export const apiClient = {
     // Check for authorization header first, even if response status is not ok
     // Backend might return 400 but still include auth header if user exists
     // Try multiple possible header names and case variations
-    const authHeader = 
-      response.headers.get("authorization") || 
+    const authHeader =
+      response.headers.get("authorization") ||
       response.headers.get("Authorization") ||
       response.headers.get("AUTHORIZATION");
 
     console.log("API Response Status:", response.status);
     console.log("Authorization Header Present:", !!authHeader);
     console.log("Team Provided:", !!team);
-    
+
     if (authHeader) {
       // Store the authorization token in localStorage
       setAuthToken(authHeader);
       console.log("Authorization token stored in localStorage");
-      
+
       // Verify it was stored
       const storedToken = getAuthToken();
       if (storedToken) {
@@ -72,7 +72,7 @@ export const apiClient = {
       } else {
         console.error("Token storage verification failed");
       }
-      
+
       // If we have auth header, treat as success regardless of status code
       return { hasAuth: true };
     }
@@ -88,7 +88,7 @@ export const apiClient = {
       } catch {
         // If response is not JSON, ignore - we'll use status-based handling
       }
-      
+
       // If it's a 400 error (likely means team is required), allow user to select team
       if (response.status === 400) {
         // This is expected when team is not provided - user needs to select team
@@ -97,7 +97,7 @@ export const apiClient = {
         }
         return { hasAuth: false };
       }
-      
+
       // For other errors, get error message and throw
       const errorMessage = errorData?.message || errorData?.detail || `Authentication failed with status ${response.status}`;
       throw new Error(errorMessage);
@@ -109,8 +109,8 @@ export const apiClient = {
     return { hasAuth: false };
   },
 
-  async getAuctionsPlayed(): Promise<AuctionRoom[]> {
-    const response = await fetch(`${API_BASE_URL}/rooms/get-auctions-played`, {
+  async getAuctionsPlayed(pageNumber: number = 1, perPage: number = 10): Promise<AuctionRoom[]> {
+    const response = await fetch(`${API_BASE_URL}/rooms/get-auctions-played/${pageNumber}/${perPage}`, {
       headers: getHeaders(),
     });
 
@@ -178,7 +178,7 @@ export const apiClient = {
         // If response is not JSON, use status text
         errorData = { message: response.statusText || "Failed to fetch available teams" };
       }
-      
+
       // If error has message, return it or throw with that message
       if (errorData?.message) {
         // If it's "Already a participant", return the full error object
@@ -188,7 +188,7 @@ export const apiClient = {
         // Otherwise throw with the backend message
         throw new Error(errorData.message);
       }
-      
+
       throw new Error(errorData?.detail || "Failed to fetch available teams");
     }
 
