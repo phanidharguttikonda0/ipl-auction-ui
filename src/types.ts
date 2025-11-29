@@ -24,6 +24,7 @@ export interface Participant {
   participant_id: number;
   team_name: string;
   user_id: number;
+  foreign_players_brought: number;
 }
 
 export interface TeamDetails {
@@ -68,6 +69,7 @@ export interface CurrentPlayer {
   name: string;
   base_price: number;
   role?: string;
+  is_indian: boolean;
 }
 
 export interface BidUpdateMessage {
@@ -80,6 +82,7 @@ export interface SoldPlayerMessage {
   sold_price: number;
   remaining_balance: number;
   remaining_rtms: number;
+  foreign_players_brought: number;
 }
 
 export interface NewJoinerMessage {
@@ -93,6 +96,7 @@ export interface OldParticipantMessage {
   team: string;
   balance: number;
   total_players_brought: number;
+  foreign_players_brought: number;
 }
 
 export interface DisconnectedMessage {
@@ -111,6 +115,7 @@ export interface ParticipantState {
   is_bot: boolean;
   connected: boolean;
   is_unmuted: boolean;
+  foreign_players_brought: number;
 }
 
 export interface SoldUnsoldState {
