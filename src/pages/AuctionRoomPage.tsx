@@ -405,12 +405,13 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
               onPause={pauseAuction}
               onEnd={endAuction}
               timerRemaining={timerRemaining}
-              disableBidActions={
+              disablePlaceBid={
                 hasSkippedCurrentPlayer ||
                 ((auctionState.participants.get(participantId ?? 0)?.foreign_players_brought ?? 0) >= 8 &&
                   !!auctionState.currentPlayer &&
                   !auctionState.currentPlayer.is_indian)
               }
+              disableSkip={hasSkippedCurrentPlayer}
             />
           </div>
 

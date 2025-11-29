@@ -13,7 +13,8 @@ interface AuctionControlsProps {
   onPause: () => void;
   onEnd: () => void;
   timerRemaining: number;
-  disableBidActions: boolean;
+  disablePlaceBid: boolean;
+  disableSkip: boolean;
 }
 
 export const AuctionControls = ({
@@ -27,7 +28,8 @@ export const AuctionControls = ({
   onPause,
   onEnd,
   timerRemaining,
-  disableBidActions,
+  disablePlaceBid,
+  disableSkip,
 }: AuctionControlsProps) => {
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const [endConfirmText, setEndConfirmText] = useState("");
@@ -41,8 +43,8 @@ export const AuctionControls = ({
     participantCount >= 3 &&
     myBalance >= currentBid &&
     timerRemaining > 0;
-  const canBid = canBidBase && !disableBidActions;
-  const canSkip = auctionStatus === "in_progress" && timerRemaining > 0 && !disableBidActions;
+  const canBid = canBidBase && !disablePlaceBid;
+  const canSkip = auctionStatus === "in_progress" && timerRemaining > 0 && !disableSkip;
   const isStopped = auctionStatus === "stopped";
 
   return (
@@ -53,11 +55,10 @@ export const AuctionControls = ({
         <button
           onClick={onStart}
           disabled={!canStart}
-          className={`w-full py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
-            canStart
+          className={`w-full py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${canStart
               ? "bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white shadow-lg hover:shadow-green-500/50"
               : "bg-gray-700 text-gray-500 cursor-not-allowed"
-          }`}
+            }`}
         >
           <Play className="w-5 h-5" />
           {canResume ? "Resume Auction" : "Start Auction"}
@@ -69,31 +70,29 @@ export const AuctionControls = ({
           </p>
         )}
 
-      <button
-        onClick={onBid}
-        disabled={!canBid}
-        className={`w-full py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
-          canBid
-            ? "bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white shadow-lg hover:shadow-blue-500/50"
-            : "bg-gray-700 text-gray-500 cursor-not-allowed"
-        }`}
-      >
-        <Gavel className="w-5 h-5" />
-        Place Bid
-      </button>
+        <button
+          onClick={onBid}
+          disabled={!canBid}
+          className={`w-full py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${canBid
+              ? "bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white shadow-lg hover:shadow-blue-500/50"
+              : "bg-gray-700 text-gray-500 cursor-not-allowed"
+            }`}
+        >
+          <Gavel className="w-5 h-5" />
+          Place Bid
+        </button>
 
         <button
           onClick={onSkip}
           disabled={!canSkip}
-          className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
-            canSkip
+          className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${canSkip
               ? "bg-gray-100/10 hover:bg-gray-100/20 border border-gray-100/30 text-white"
               : "bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-700"
-          }`}
+            }`}
         >
           Skip
         </button>
-          
+
         {!canBid && myBalance < currentBid && auctionStatus === "in_progress" && (
           <p className="text-xs text-red-400 text-center">
             Insufficient balance to bid
@@ -104,11 +103,10 @@ export const AuctionControls = ({
         <button
           onClick={onPause}
           disabled={!canPause}
-          className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
-            canPause
+          className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${canPause
               ? "bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/50 text-yellow-400"
               : "bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-700"
-          }`}
+            }`}
         >
           <Pause className="w-5 h-5" />
           Pause Auction
@@ -196,11 +194,10 @@ export const AuctionControls = ({
                   }
                 }}
                 disabled={endConfirmText.toLowerCase() !== "end"}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  endConfirmText.toLowerCase() === "end"
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${endConfirmText.toLowerCase() === "end"
                     ? "bg-red-500 hover:bg-red-600 text-white"
                     : "bg-gray-700 text-gray-500 cursor-not-allowed"
-                }`}
+                  }`}
               >
                 Continue
               </button>
