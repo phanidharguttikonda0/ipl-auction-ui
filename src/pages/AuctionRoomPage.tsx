@@ -308,11 +308,10 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
 
             <div className="flex items-center gap-4 flex-wrap">
               <div
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  connected
-                    ? "bg-green-500/20 border border-green-500/50"
-                    : "bg-red-500/20 border border-red-500/50"
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${connected
+                  ? "bg-green-500/20 border border-green-500/50"
+                  : "bg-red-500/20 border border-red-500/50"
+                  }`}
               >
                 {connected ? (
                   <>
@@ -378,19 +377,19 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                   {auctionState.auctionStatus === "completed"
                     ? "Auction Completed"
                     : auctionState.auctionStatus === "stopped"
-                    ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
-                      ? "Auction Paused"
-                      : "Auction Paused"
-                    : "Waiting to Start"}
+                      ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
+                        ? "Auction Paused"
+                        : "Auction Paused"
+                      : "Waiting to Start"}
                 </h3>
                 <p className="text-gray-400">
                   {auctionState.auctionStatus === "completed"
                     ? "Thank you for participating!"
                     : auctionState.auctionStatus === "stopped"
-                    ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
-                      ? "Auction is paused. Click Start to resume from the last player."
-                      : "Need minimum 3 participants to continue"
-                    : "Press Start Auction to begin"}
+                      ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
+                        ? "Auction is paused. Click Start to resume from the last player."
+                        : "Need minimum 3 participants to continue"
+                      : "Press Start Auction to begin"}
                 </p>
               </div>
             )}
@@ -406,7 +405,12 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
               onPause={pauseAuction}
               onEnd={endAuction}
               timerRemaining={timerRemaining}
-              disableBidActions={hasSkippedCurrentPlayer}
+              disableBidActions={
+                hasSkippedCurrentPlayer ||
+                ((auctionState.participants.get(participantId ?? 0)?.foreign_players_brought ?? 0) >= 8 &&
+                  !!auctionState.currentPlayer &&
+                  !auctionState.currentPlayer.is_indian)
+              }
             />
           </div>
 
@@ -512,11 +516,10 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
               <button
                 onClick={handleRTMAmountSubmit}
                 disabled={!rtmAmountInput || parseFloat(rtmAmountInput) <= 0 || isNaN(parseFloat(rtmAmountInput))}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  !rtmAmountInput || parseFloat(rtmAmountInput) <= 0 || isNaN(parseFloat(rtmAmountInput))
-                    ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-500 hover:bg-blue-600 text-white"
-                }`}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${!rtmAmountInput || parseFloat(rtmAmountInput) <= 0 || isNaN(parseFloat(rtmAmountInput))
+                  ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+                  }`}
               >
                 Submit
               </button>

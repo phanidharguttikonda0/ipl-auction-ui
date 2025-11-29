@@ -7,6 +7,7 @@ import {
   WifiOff,
   Mic,
   MicOff,
+  Plane,
 } from "lucide-react";
 import { useMemo, useRef } from "react";
 import { TEAM_COLORS } from "../../constants";
@@ -175,6 +176,15 @@ export const ParticipantsList = ({
                     <p className="text-xs text-gray-400">RTMs</p>
                     <p className="text-white font-semibold">
                       {participant.remaining_rtms}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 col-span-3 mt-1">
+                  <div className="flex items-center gap-2 bg-gray-800/50 px-2 py-1 rounded border border-gray-700/50">
+                    <Plane className="w-3 h-3 text-cyan-400 transform -rotate-45" />
+                    <p className="text-xs text-gray-300 font-medium">
+                      Foreigners - <span className="text-white font-bold">{participant.foreign_players_brought}</span>
                     </p>
                   </div>
                 </div>

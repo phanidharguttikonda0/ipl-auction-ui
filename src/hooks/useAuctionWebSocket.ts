@@ -151,6 +151,7 @@ export const useAuctionWebSocket = ({
           is_bot: data.is_bot ?? false,
           connected: true,
           is_unmuted: data.is_unmuted ?? false,
+          foreign_players_brought: data.foreign_players_brought ?? 0,
         });
 
         const myBalance = data.id === participantId ? data.balance : prev.myBalance;
@@ -185,6 +186,7 @@ export const useAuctionWebSocket = ({
           is_bot: p.is_bot ?? false,
           connected: true,
           is_unmuted: p.is_unmuted ?? false,
+          foreign_players_brought: p.foreign_players_brought ?? 0,
         });
       });
 
@@ -289,6 +291,7 @@ export const useAuctionWebSocket = ({
                   is_bot: false,
                   connected: true,
                   is_unmuted: cmd === "unmute",
+                  foreign_players_brought: 0,
                 });
               }
               return { ...prev, participants: newParticipants };
@@ -346,6 +349,7 @@ export const useAuctionWebSocket = ({
             balance: data.remaining_balance,
             total_players_brought: participant.total_players_brought + 1,
             remaining_rtms: data.remaining_rtms ?? participant.remaining_rtms,
+            foreign_players_brought: data.foreign_players_brought ?? participant.foreign_players_brought,
           });
         }
 

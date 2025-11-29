@@ -1,4 +1,4 @@
-import { User, Clock, TrendingUp } from "lucide-react";
+import { User, Clock, TrendingUp, Plane } from "lucide-react";
 import type { CurrentPlayer } from "../../types";
 
 interface PlayerCardProps {
@@ -20,7 +20,12 @@ export const PlayerCard = ({
         <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full mb-4">
           <User className="w-10 h-10 text-white" />
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2">{player.name}</h2>
+        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
+          {player.name}
+          {!player.is_indian && (
+            <Plane className="w-6 h-6 text-cyan-400 transform -rotate-45" />
+          )}
+        </h2>
         {player.role && (
           <p className="text-blue-400 text-sm font-medium uppercase tracking-wide">
             {player.role}
