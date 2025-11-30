@@ -137,6 +137,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     sendRTMAmount,
     sendRTMAccept,
     sendRTMCancel,
+    sendInstantRTMCancel,
     sendSkip,
     sendJsonMessage,
     registerSignalHandler,
@@ -452,6 +453,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
             <div className="flex gap-3">
               <button
                 onClick={() => {
+                  sendInstantRTMCancel();
                   setShowRTMDialog(false);
                   setIsRtmTimerActive(false);
                   setRtmResponseSecondsLeft(0);
