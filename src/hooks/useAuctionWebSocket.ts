@@ -732,6 +732,7 @@ export const useAuctionWebSocket = ({
     sendRTMAmount,
     sendRTMAccept,
     sendRTMCancel,
+    sendInstantRTMCancel: () => sendMessage("instant-rtm-cancel"),
     sendSkip,
     sendJsonMessage, // used by useAuctionAudio for signaling (offer/answer/ice)
     registerSignalHandler, // used by useAuctionAudio
