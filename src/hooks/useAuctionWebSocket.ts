@@ -247,9 +247,16 @@ export const useAuctionWebSocket = ({
           };
         });
         stopTimer();
-      } else if (data === "exit") {
+      } else if (data === "exit" || data === "Auction was completed, Room was Closed") {
         onMessage?.("Auction ended by host");
-        setAuctionState((prev) => ({ ...prev, auctionStatus: "completed" }));
+        setAuctionState((prev) => ({
+          ...prev,
+          auctionStatus: "ended_by_host",
+          currentPlayer: null,
+          currentBid: 0,
+          highestBidder: null,
+          timerRemaining: 0,
+        }));
         wsRef.current?.close();
       } else if (data === "Auction Completed") {
         onMessage?.("Auction completed!");

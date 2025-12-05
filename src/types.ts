@@ -109,7 +109,7 @@ export interface ParticipantAudioMessage {
   is_unmuted: boolean;
 }
 
-export type AuctionStatus = "pending" | "in_progress" | "stopped" | "completed";
+export type AuctionStatus = "pending" | "in_progress" | "stopped" | "completed" | "ended_by_host";
 
 export interface ParticipantState {
   participant_id: number;
