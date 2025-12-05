@@ -248,9 +248,9 @@ export const apiClient = {
       method: "POST",
       headers: {
         ...getHeaders(),
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
-      body: params.toString(),
+      body: JSON.stringify(data),
     });
 
     checkUnauthorized(response);
