@@ -145,3 +145,10 @@ export interface AuctionState {
   myParticipantId: number;
   auctionStatus: AuctionStatus;
 }
+
+export interface FeedBackRequest {
+  feedback_type: string;
+  rating_value?: number;
+  title?: string;
+  description?: string;
+}
