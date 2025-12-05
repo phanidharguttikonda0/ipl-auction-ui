@@ -377,20 +377,24 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                 <h3 className="text-xl font-bold text-white mb-2">
                   {auctionState.auctionStatus === "completed"
                     ? "Auction Completed"
-                    : auctionState.auctionStatus === "stopped"
-                      ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
-                        ? "Auction Paused"
-                        : "Auction Paused"
-                      : "Waiting to Start"}
+                    : auctionState.auctionStatus === "ended_by_host"
+                      ? "Auction was Ended by Host"
+                      : auctionState.auctionStatus === "stopped"
+                        ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
+                          ? "Auction Paused"
+                          : "Auction Paused"
+                        : "Waiting to Start"}
                 </h3>
                 <p className="text-gray-400">
                   {auctionState.auctionStatus === "completed"
                     ? "Thank you for participating!"
-                    : auctionState.auctionStatus === "stopped"
-                      ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
-                        ? "Auction is paused. Click Start to resume from the last player."
-                        : "Need minimum 3 participants to continue"
-                      : "Press Start Auction to begin"}
+                    : auctionState.auctionStatus === "ended_by_host"
+                      ? "The host has ended the auction session."
+                      : auctionState.auctionStatus === "stopped"
+                        ? auctionState.currentPlayer === null && auctionState.timerRemaining === 0
+                          ? "Auction is paused. Click Start to resume from the last player."
+                          : "Need minimum 3 participants to continue"
+                        : "Press Start Auction to begin"}
                 </p>
               </div>
             )}

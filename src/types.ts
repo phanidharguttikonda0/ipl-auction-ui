@@ -104,7 +104,12 @@ export interface DisconnectedMessage {
   team_name: string;
 }
 
-export type AuctionStatus = "pending" | "in_progress" | "stopped" | "completed";
+export interface ParticipantAudioMessage {
+  participant_id: number;
+  is_unmuted: boolean;
+}
+
+export type AuctionStatus = "pending" | "in_progress" | "stopped" | "completed" | "ended_by_host";
 
 export interface ParticipantState {
   participant_id: number;
