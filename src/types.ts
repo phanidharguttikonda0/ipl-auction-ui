@@ -18,6 +18,7 @@ export interface UserAuth {
 export interface AuctionRoom {
   room_id: string;
   created_at: string;
+  status: string;
 }
 
 export interface Participant {
