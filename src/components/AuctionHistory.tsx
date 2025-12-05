@@ -153,9 +153,24 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
                   <Calendar className="w-4 h-4 text-blue-400 flex-shrink-0" />
 
                   <div className="text-left min-w-0">
-                    <p className="text-sm font-medium text-white truncate">
-                      {auction.room_id}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-white truncate">
+                        {auction.room_id}
+                      </p>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded border ${auction.status === "not_started"
+                            ? "text-green-400 bg-green-400/10 border-green-400/20"
+                            : auction.status === "in_progress"
+                              ? "text-gray-400 bg-gray-400/10 border-gray-400/20"
+                              : auction.status === "completed"
+                                ? "text-red-400 bg-red-400/10 border-red-400/20"
+                                : "text-blue-400 bg-blue-400/10 border-blue-400/20"
+                          }`}
+                      >
+                        {auction.status?.replace("_", " ").toUpperCase() ||
+                          "UNKNOWN"}
+                      </span>
+                    </div>
                     <p className="text-xs text-gray-400">
                       {new Date(auction.created_at).toLocaleDateString()}
                     </p>
