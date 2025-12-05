@@ -236,13 +236,13 @@ export const apiClient = {
   },
 
   async submitFeedback(data: FeedBackRequest): Promise<void> {
-    const params = new URLSearchParams();
-    params.append("feedback_type", data.feedback_type);
-    if (data.rating_value !== undefined && data.rating_value !== null) {
-      params.append("rating_value", data.rating_value.toString());
-    }
-    if (data.title) params.append("title", data.title);
-    if (data.description) params.append("description", data.description);
+    // const params = new URLSearchParams();
+    // params.append("feedback_type", data.feedback_type);
+    // if (data.rating_value !== undefined && data.rating_value !== null) {
+    //   params.append("rating_value", data.rating_value.toString());
+    // }
+    // if (data.title) params.append("title", data.title);
+    // if (data.description) params.append("description", data.description);
 
     const response = await fetch(`${API_BASE_URL}/feedback`, {
       method: "POST",
