@@ -12,6 +12,7 @@ import type {
   AuctionStatus,
   SoldPlayerOutput,
   UnSoldPlayerOutput,
+  ParticipantAudioMessage,
 } from "../types";
 
 interface UseAuctionWebSocketProps {
@@ -428,6 +429,25 @@ export const useAuctionWebSocket = ({
     [onMessage],
   );
 
+  const handleParticipantAudio = useCallback(
+    (data: ParticipantAudioMessage) => {
+      setAuctionState((prev) => {
+        const newParticipants = new Map(prev.participants);
+        const participant = newParticipants.get(data.participant_id);
+        if (participant) {
+          newParticipants.set(data.participant_id, {
+            ...participant,
+            is_unmuted: data.is_unmuted,
+          });
+        }
+        return { ...prev, participants: newParticipants };
+      });
+      // Optionally log or notify if needed, but might be too noisy for audio status
+      // onMessage?.(`Participant ${data.participant_id} ${data.is_unmuted ? "unmuted" : "muted"}`);
+    },
+    [],
+  );
+
   // ---------- JSON router (incl. signaling) ----------
 
   const handleJsonMessage = useCallback(
@@ -504,6 +524,16 @@ export const useAuctionWebSocket = ({
         return;
       }
 
+      // Participant Audio
+      if (
+        data &&
+        typeof data.participant_id === "number" &&
+        typeof data.is_unmuted === "boolean"
+      ) {
+        handleParticipantAudio(data as ParticipantAudioMessage);
+        return;
+      }
+
       console.log("⚠️ Unhandled JSON message:", data);
     },
     [
@@ -512,6 +542,7 @@ export const useAuctionWebSocket = ({
       handleBidUpdate,
       handleSoldPlayer,
       handleParticipantDisconnected,
+      handleParticipantAudio,
     ],
   );
 
