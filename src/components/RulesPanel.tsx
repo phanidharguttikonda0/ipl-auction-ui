@@ -1,5 +1,6 @@
-import { BookOpen, Sparkles } from "lucide-react";
-import { AUCTION_RULES, UPCOMING_FEATURES } from "../constants";
+import { BookOpen } from "lucide-react";
+import { AUCTION_RULES } from "../constants";
+import { FeedbackForm } from "./FeedbackForm";
 
 export const RulesPanel = () => {
   return (
@@ -21,22 +22,7 @@ export const RulesPanel = () => {
         </ul>
       </div>
 
-      <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-colors">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-amber-400" />
-          </div>
-          <h2 className="text-lg font-bold text-white">Upcoming Features</h2>
-        </div>
-        <ul className="space-y-2">
-          {UPCOMING_FEATURES.map((feature, index) => (
-            <li key={index} className="flex items-start gap-2 text-gray-400 text-xs">
-              <span className="text-amber-400 mt-1">→</span>
-              <span>{feature}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <FeedbackForm />
     </div>
   );
 };
