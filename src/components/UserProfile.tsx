@@ -1,4 +1,4 @@
-import { Mail, LogOut } from "lucide-react";
+import { Mail, LogOut, Edit2 } from "lucide-react";
 import { TEAM_COLORS, TEAM_LOGOS } from "../constants";
 import type { TeamName } from "../types";
 
@@ -6,9 +6,10 @@ interface UserProfileProps {
   email: string;
   favoriteTeam: TeamName;
   onLogout: () => void;
+  onEditTeam: () => void;
 }
 
-export const UserProfile = ({ email, favoriteTeam, onLogout }: UserProfileProps) => {
+export const UserProfile = ({ email, favoriteTeam, onLogout, onEditTeam }: UserProfileProps) => {
   const teamColors = TEAM_COLORS[favoriteTeam];
 
   return (
@@ -48,7 +49,17 @@ export const UserProfile = ({ email, favoriteTeam, onLogout }: UserProfileProps)
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs text-gray-400 mb-1">Favorite Team</p>
-            <p className="text-sm text-white font-medium">{favoriteTeam}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-white font-medium">{favoriteTeam}</p>
+              <button
+                onClick={onEditTeam}
+                className="group relative p-1.5 rounded-lg transition-all duration-300 hover:bg-blue-500/20"
+                title="Change Favorite Team"
+              >
+                <div className="absolute inset-0 rounded-lg bg-blue-400/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Edit2 className="relative w-3.5 h-3.5 text-gray-400 group-hover:text-blue-300 transition-colors" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

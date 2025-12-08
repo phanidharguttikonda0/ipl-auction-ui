@@ -2,6 +2,7 @@ import { jwtDecode } from "jwt-decode";
 import type { UserAuth } from "./types";
 
 interface DecodedToken extends UserAuth {
+  sub: string;
   exp?: number;
 }
 
@@ -20,5 +21,9 @@ export const getStoredUser = (): UserAuth | null => {
   const decoded = decodeToken(token);
   if (!decoded) return null;
 
-  return { gmail: decoded.gmail, favorite_team: decoded.favorite_team };
+  return {
+    gmail: decoded.gmail,
+    favorite_team: decoded.favorite_team,
+    google_sid: decoded.sub
+  };
 };
