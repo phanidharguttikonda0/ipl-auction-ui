@@ -8,25 +8,27 @@ import type { TeamName } from "../types";
 interface LocationState {
   gmail: string;
   googleSid: string;
+  isEditMode?: boolean;
 }
 
 export const TeamSelectionPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { gmail, googleSid } = (location.state as LocationState) || {};
+  const { gmail, googleSid, isEditMode } = (location.state as LocationState) || {};
 
   const [selectedTeam, setSelectedTeam] = useState<TeamName | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   // Redirect if no credentials in state
+  // Redirect if no credentials in state (unless we are in edit mode, where we authenticate via token)
   useEffect(() => {
-    if (!gmail || !googleSid) {
+    if (!isEditMode && (!gmail || !googleSid)) {
       navigate("/authentication", { replace: true });
     }
-  }, [gmail, googleSid, navigate]);
+  }, [gmail, googleSid, isEditMode, navigate]);
 
-  if (!gmail || !googleSid) {
+  if (!isEditMode && (!gmail || !googleSid)) {
     return null;
   }
 
@@ -37,36 +39,34 @@ export const TeamSelectionPage = () => {
       setLoading(true);
       setError("");
 
-      // Call the API with the selected team
-      const result = await apiClient.continueWithGoogle(gmail, googleSid, selectedTeam);
+      if (isEditMode) {
+        // Edit Mode: Update existing user's team using token
+        await apiClient.updateFavoriteTeam(selectedTeam);
+        // If successful (no error thrown), navigate back
+        console.log("Team updated successfully");
+        navigate("/home", { replace: true });
+      } else {
+        // Sign-up/Login Flow: Continue with Google credentials
+        // We need gmail/googleSid here, which is guaranteed by the checks above if !isEditMode
+        if (!gmail || !googleSid) throw new Error("Missing credentials");
 
-      // Verify that the authorization token was stored in localStorage
-      // Since setAuthToken is synchronous (localStorage.setItem), token should be available immediately
-      const token = getAuthToken();
+        const result = await apiClient.continueWithGoogle(gmail, googleSid, selectedTeam);
 
-      if (result.hasAuth) {
-        // If API returned hasAuth: true, token should be stored
-        if (token) {
-          // Token is stored successfully, navigate to home
-          console.log("Team selected successfully, navigating to home");
+        const token = getAuthToken();
+
+        if (result.hasAuth && token) {
           navigate("/home", { replace: true });
         } else {
-          // This shouldn't happen, but handle it just in case
-          console.error("API returned hasAuth but token not found in localStorage");
           setError("Authorization token not received. Please try again.");
           setLoading(false);
         }
-      } else {
-        // No auth header received - this should not happen after team selection
-        setError("Failed to complete authentication. Please try again.");
-        setLoading(false);
       }
     } catch (err) {
       console.error("Team selection error:", err);
-      setError(err instanceof Error ? err.message : "Failed to save team selection");
+      setError(isEditMode ? "Server problem, please try later." : (err instanceof Error ? err.message : "Failed to save team selection"));
       setLoading(false);
     }
-  }, [selectedTeam, gmail, googleSid, navigate]);
+  }, [selectedTeam, gmail, googleSid, navigate, isEditMode]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 overflow-auto">
@@ -75,8 +75,12 @@ export const TeamSelectionPage = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full mb-4">
             <Shield className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Choose Your Team</h1>
-          <p className="text-gray-400">Select your favorite IPL team to continue</p>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            {isEditMode ? "Update Your Team" : "Choose Your Team"}
+          </h1>
+          <p className="text-gray-400">
+            {isEditMode ? "Select a new favorite IPL team" : "Select your favorite IPL team to continue"}
+          </p>
         </div>
 
         {error && (
@@ -95,8 +99,8 @@ export const TeamSelectionPage = () => {
                 key={team}
                 onClick={() => setSelectedTeam(team)}
                 className={`relative p-6 rounded-xl transition-all duration-200 ${isSelected
-                    ? "ring-2 ring-blue-500 bg-gray-800/80 scale-105"
-                    : "bg-gray-800/50 hover:bg-gray-800/70"
+                  ? "ring-2 ring-blue-500 bg-gray-800/80 scale-105"
+                  : "bg-gray-800/50 hover:bg-gray-800/70"
                   } border border-gray-700 group`}
               >
                 <div className="flex items-start justify-between mb-3">
@@ -132,8 +136,8 @@ export const TeamSelectionPage = () => {
             onClick={handleContinue}
             disabled={!selectedTeam || loading}
             className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 ${!selectedTeam || loading
-                ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800 shadow-lg hover:shadow-blue-500/50"
+              ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+              : "bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800 shadow-lg hover:shadow-blue-500/50"
               }`}
           >
             {loading ? (
@@ -142,7 +146,7 @@ export const TeamSelectionPage = () => {
                 Saving...
               </span>
             ) : (
-              "Continue"
+              isEditMode ? "Update Team" : "Continue"
             )}
           </button>
         </div>

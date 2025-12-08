@@ -259,6 +259,31 @@ export const apiClient = {
       throw new Error(error.message || "Failed to submit feedback");
     }
   },
+  async updateFavoriteTeam(teamName: TeamName): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/update-favorite-team/${encodeURIComponent(teamName)}`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    checkUnauthorized(response);
+
+    // Some GET requests might return a new token in headers, check for it
+    const authHeader = response.headers.get("authorization") ||
+      response.headers.get("Authorization") ||
+      response.headers.get("AUTHORIZATION");
+
+    if (authHeader) {
+      console.log("Received new authorization header, updating token");
+      setAuthToken(authHeader);
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to update favorite team" }));
+      throw new Error(error.message || "Failed to update favorite team");
+    }
+
+    return response.json().catch(() => ({})); // Return empty object if no JSON
+  },
 };
 
 export function getUserIdFromAuthToken(): number | null {

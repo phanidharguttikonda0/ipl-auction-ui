@@ -13,6 +13,7 @@ export type TeamName =
 export interface UserAuth {
   gmail: string;
   favorite_team: TeamName;
+  google_sid?: string;
 }
 
 export interface AuctionRoom {
