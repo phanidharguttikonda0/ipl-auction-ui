@@ -10,7 +10,7 @@ import {
   Plane,
 } from "lucide-react";
 import { useMemo, useRef } from "react";
-import { TEAM_COLORS } from "../../constants";
+import { TEAM_LOGOS } from "../../constants";
 import type { ParticipantState, TeamName } from "../../types";
 
 interface AudioControls {
@@ -87,7 +87,7 @@ export const ParticipantsList = ({
       {/* Participant list */}
       <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-hide">
         {sortedParticipants.map((participant) => {
-          const colors = TEAM_COLORS[participant.team_name as TeamName];
+
           const isMe = participant.participant_id === myParticipantId;
 
           // Local-only mute: only "me" uses localMuted; others use !participant.is_unmuted
@@ -110,10 +110,13 @@ export const ParticipantsList = ({
                   onClick={() => onSelectParticipant(participant.participant_id)}
                   className="flex items-center gap-2 flex-1 min-w-0 text-left"
                 >
-                  <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: colors?.primary }}
-                  />
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 bg-white/5 p-1">
+                    <img
+                      src={TEAM_LOGOS[participant.team_name as TeamName]}
+                      alt={participant.team_name}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
 
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-white truncate">

@@ -1,5 +1,5 @@
-import { Mail, Shield, LogOut } from "lucide-react";
-import { TEAM_COLORS } from "../constants";
+import { Mail, LogOut } from "lucide-react";
+import { TEAM_COLORS, TEAM_LOGOS } from "../constants";
 import type { TeamName } from "../types";
 
 interface UserProfileProps {
@@ -37,10 +37,14 @@ export const UserProfile = ({ email, favoriteTeam, onLogout }: UserProfileProps)
 
         <div className="flex items-start gap-3">
           <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 p-1.5"
             style={{ backgroundColor: `${teamColors?.primary}33` }}
           >
-            <Shield className="w-5 h-5" style={{ color: teamColors?.primary }} />
+            <img
+              src={TEAM_LOGOS[favoriteTeam]}
+              alt={favoriteTeam}
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs text-gray-400 mb-1">Favorite Team</p>
