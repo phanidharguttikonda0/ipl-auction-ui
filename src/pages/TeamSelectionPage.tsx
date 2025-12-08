@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Shield, CheckCircle2 } from "lucide-react";
 import { apiClient, getAuthToken } from "../services/api";
-import { TEAMS, TEAM_COLORS } from "../constants";
+import { TEAMS, TEAM_COLORS, TEAM_LOGOS } from "../constants";
 import type { TeamName } from "../types";
 
 interface LocationState {
@@ -36,14 +36,14 @@ export const TeamSelectionPage = () => {
     try {
       setLoading(true);
       setError("");
-      
+
       // Call the API with the selected team
       const result = await apiClient.continueWithGoogle(gmail, googleSid, selectedTeam);
-      
+
       // Verify that the authorization token was stored in localStorage
       // Since setAuthToken is synchronous (localStorage.setItem), token should be available immediately
       const token = getAuthToken();
-      
+
       if (result.hasAuth) {
         // If API returned hasAuth: true, token should be stored
         if (token) {
@@ -94,17 +94,19 @@ export const TeamSelectionPage = () => {
               <button
                 key={team}
                 onClick={() => setSelectedTeam(team)}
-                className={`relative p-6 rounded-xl transition-all duration-200 ${
-                  isSelected
+                className={`relative p-6 rounded-xl transition-all duration-200 ${isSelected
                     ? "ring-2 ring-blue-500 bg-gray-800/80 scale-105"
                     : "bg-gray-800/50 hover:bg-gray-800/70"
-                } border border-gray-700 group`}
+                  } border border-gray-700 group`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: colors.primary }}
-                  ></div>
+                  <div className="w-12 h-12 p-1 rounded-lg bg-white/5 backdrop-blur-sm">
+                    <img
+                      src={TEAM_LOGOS[team]}
+                      alt={team}
+                      className="w-full h-full object-contain filter drop-shadow hover:scale-110 transition-transform"
+                    />
+                  </div>
                   {isSelected && (
                     <CheckCircle2 className="w-5 h-5 text-blue-500" />
                   )}
@@ -129,11 +131,10 @@ export const TeamSelectionPage = () => {
           <button
             onClick={handleContinue}
             disabled={!selectedTeam || loading}
-            className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 ${
-              !selectedTeam || loading
+            className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 ${!selectedTeam || loading
                 ? "bg-gray-700 text-gray-500 cursor-not-allowed"
                 : "bg-gradient-to-r from-blue-500 to-blue-700 text-white hover:from-blue-600 hover:to-blue-800 shadow-lg hover:shadow-blue-500/50"
-            }`}
+              }`}
           >
             {loading ? (
               <span className="flex items-center gap-2">
