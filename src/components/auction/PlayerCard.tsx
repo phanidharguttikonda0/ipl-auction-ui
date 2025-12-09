@@ -1,4 +1,5 @@
-import { User, Clock, TrendingUp, Plane } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Clock, TrendingUp, Plane, User } from "lucide-react";
 import type { CurrentPlayer } from "../../types";
 
 interface PlayerCardProps {
@@ -14,11 +15,28 @@ export const PlayerCard = ({
   highestBidder,
   timerRemaining,
 }: PlayerCardProps) => {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [player.id, player.profile_url]);
+
   return (
     <div className="bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-blue-500/50 rounded-2xl p-8 shadow-2xl hover:border-blue-400 transition-colors">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full mb-4">
-          <User className="w-10 h-10 text-white" />
+        <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full mb-4 overflow-hidden border-2 border-blue-400/50 shadow-lg shadow-blue-500/20">
+          {player.profile_url && !imgError ? (
+            <img
+              src={player.profile_url}
+              alt={player.name}
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-800">
+              <User className="w-12 h-12 text-gray-500" />
+            </div>
+          )}
         </div>
         <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
           {player.name}
@@ -29,6 +47,11 @@ export const PlayerCard = ({
         {player.role && (
           <p className="text-blue-400 text-sm font-medium uppercase tracking-wide">
             {player.role}
+          </p>
+        )}
+        {player.country && (
+          <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mt-1">
+            {player.country}
           </p>
         )}
       </div>

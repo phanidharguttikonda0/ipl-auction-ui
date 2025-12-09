@@ -72,6 +72,8 @@ export interface CurrentPlayer {
   base_price: number;
   role?: string;
   is_indian: boolean;
+  profile_url?: string;
+  country?: string;
 }
 
 export interface BidUpdateMessage {
