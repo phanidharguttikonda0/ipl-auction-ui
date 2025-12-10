@@ -74,6 +74,7 @@ export interface CurrentPlayer {
   is_indian: boolean;
   profile_url?: string;
   country?: string;
+  pool_no?: number;
 }
 
 export interface BidUpdateMessage {
@@ -149,9 +150,27 @@ export interface AuctionState {
   auctionStatus: AuctionStatus;
 }
 
+// ... existing code ...
 export interface FeedBackRequest {
   feedback_type: string;
   rating_value?: number;
   title?: string;
   description?: string;
+}
+
+export interface PoolPlayer {
+  id: number;
+  name: string;
+  base_price: number;
+  country: string;
+  role: string;
+  previous_team: string;
+  is_indian: boolean;
+}
+
+export interface PoolPlayersState {
+  allPlayers: PoolPlayer[];
+  currentPage: number;
+  loading: boolean;
+  selectedPoolId: number | null;
 }
