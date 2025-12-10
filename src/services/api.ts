@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../constants";
-import type { AuctionRoom, Participant, TeamDetails, PlayerDetails, RoomResponse, TeamName, SoldPlayerOutput, UnSoldPlayerOutput, FeedBackRequest } from "../types";
+import { API_BASE_URL } from "../constants";
+import type { AuctionRoom, Participant, TeamDetails, PlayerDetails, RoomResponse, TeamName, SoldPlayerOutput, UnSoldPlayerOutput, FeedBackRequest, PoolPlayer } from "../types";
 
 export const getAuthToken = (): string | null => localStorage.getItem("auth_token");
 
@@ -230,6 +231,19 @@ export const apiClient = {
     checkUnauthorized(response);
     if (!response.ok) {
       throw new Error("Failed to fetch unsold players");
+    }
+
+    return response.json();
+  },
+
+  async getPoolPlayers(poolId: number): Promise<PoolPlayer[]> {
+    const response = await fetch(`${API_BASE_URL}/players/get-pool/${poolId}`, {
+      headers: getHeaders(),
+    });
+
+    checkUnauthorized(response);
+    if (!response.ok) {
+      throw new Error("Failed to fetch pool players");
     }
 
     return response.json();

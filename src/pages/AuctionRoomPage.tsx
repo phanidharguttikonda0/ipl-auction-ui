@@ -1,7 +1,7 @@
 // src/pages/AuctionRoomPage.tsx
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Wifi, WifiOff, Gavel, Copy } from "lucide-react";
+import { ArrowLeft, Wifi, WifiOff, Gavel, Copy, Users } from "lucide-react";
 import { useAuctionWebSocket } from "../hooks/useAuctionWebSocket";
 import { useAuctionAudio } from "../hooks/useAuctionAudio";
 import { PlayerCard } from "../components/auction/PlayerCard";
@@ -11,6 +11,10 @@ import { SoldUnsoldList } from "../components/auction/SoldUnsoldList";
 import { Toast, type ToastType } from "../components/Toast";
 import { TeamDetailsModal } from "../components/TeamDetailsModal.tsx";
 import { apiClient } from "../services/api";
+import { PoolsList } from "../components/auction/PoolsList";
+import { PoolPlayersList } from "../components/auction/PoolPlayersList";
+import { POOL_NAMES } from "../constants";
+import type { PoolPlayer } from "../types";
 
 const RTM_RESPONSE_TIMEOUT = 17;
 
@@ -29,6 +33,11 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const state = location.state as LocationState | null;
   const [copied, setCopied] = useState(false);
 
+  // Pool states
+  const [selectedPoolId, setSelectedPoolId] = useState<number | null>(null);
+  const [poolPlayers, setPoolPlayers] = useState<PoolPlayer[]>([]);
+  const [isPoolLoading, setIsPoolLoading] = useState(false);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(roomId);
     setCopied(true);
@@ -42,6 +51,23 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     state?.teamName ?? null
   );
   const [loading, setLoading] = useState(!state);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
+  const handleSelectPool = useCallback(async (poolId: number) => {
+    setSelectedPoolId(poolId);
+    setIsPoolLoading(true);
+    try {
+      const players = await apiClient.getPoolPlayers(poolId);
+      setPoolPlayers(players);
+    } catch (err) {
+      console.error("Failed to fetch pool players:", err);
+      setToast({ message: "Failed to fetch pool players", type: "error" });
+    } finally {
+      setIsPoolLoading(false);
+    }
+  }, []);
+
+
 
   // If state is missing, try to fetch participant info from API
   useEffect(() => {
@@ -72,7 +98,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const handleBack = useCallback(() => {
     navigate("/home");
   }, [navigate]);
-  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
   const [selectedParticipant, setSelectedParticipant] = useState<number | null>(null);
 
   // RTM states
@@ -166,6 +192,18 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     setHasSkippedCurrentPlayer(false);
   }, [auctionState.currentPlayer?.id]);
 
+  // Auto-select current pool when it changes (only once per pool change)
+  const prevPoolNoRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    const currentPoolNo = auctionState.currentPlayer?.pool_no;
+    // Only auto-switch if we have a pool number and it's different from the last one we saw
+    if (currentPoolNo && currentPoolNo !== prevPoolNoRef.current) {
+      handleSelectPool(currentPoolNo);
+      prevPoolNoRef.current = currentPoolNo;
+    }
+  }, [auctionState.currentPlayer?.pool_no, handleSelectPool]);
+
   useEffect(() => {
     if (!isRtmTimerActive) {
       return;
@@ -189,7 +227,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [isRtmTimerActive, showRTMDialog, showRTMAmountInput, setToast]);
+  }, [isRtmTimerActive, showRTMDialog, showRTMAmountInput]);
 
   // Handle RTM dialog "Yes" button
   const handleRTMConfirm = useCallback(() => {
@@ -422,7 +460,39 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
 
           {/* RIGHT SIDEBAR */}
           <div className="lg:col-span-3 order-3">
-            <div className="sticky top-24">
+            <div className="sticky top-24 space-y-6">
+
+              {/* Current Pool Banner */}
+              {auctionState.currentPlayer?.pool_no && POOL_NAMES[auctionState.currentPlayer.pool_no] && (
+                <div className="bg-gradient-to-r from-blue-900/80 to-blue-800/80 backdrop-blur-md rounded-xl p-4 shadow-lg border border-blue-500/30 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/20 rounded-lg">
+                      <Users className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div className="overflow-hidden">
+                      <h3 className="text-blue-300 text-[10px] font-bold uppercase tracking-wider mb-0.5">Current Pool</h3>
+                      <p className="text-white text-base font-bold truncate leading-tight">
+                        {POOL_NAMES[auctionState.currentPlayer.pool_no]}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <PoolsList
+                selectedPoolId={selectedPoolId}
+                onSelectPool={handleSelectPool}
+                currentAuctionPoolId={auctionState.currentPlayer?.pool_no}
+              />
+
+              {selectedPoolId && (
+                <PoolPlayersList
+                  players={poolPlayers}
+                  loading={isPoolLoading}
+                  poolName={POOL_NAMES[selectedPoolId]}
+                />
+              )}
+
               <SoldUnsoldList
                 soldPlayers={auctionState.soldPlayers}
                 unsoldPlayers={auctionState.unsoldPlayers}

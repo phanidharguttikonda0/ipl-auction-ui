@@ -65,4 +65,19 @@ export const UPCOMING_FEATURES = [
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL;
+export const POOL_NAMES: Record<number, string> = {
+  1: "Elite-AR-pool-1",
+  2: "Elite-BAT-pool-2",
+  3: "Elite-BOWL-pool-3",
+  4: "Core-AR-pool-4",
+  5: "Core-BAT-pool-5",
+  6: "Core-BOWL-pool-6",
+  7: "Value-AR-pool-7",
+  8: "Value-BAT-pool-8",
+  9: "Value-BOWL-pool-9",
+  10: "Budget-AR-pool-10",
+  11: "Budget-BAT-pool-11",
+  12: "Budget-BOWL-pool-12",
+};
+
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
