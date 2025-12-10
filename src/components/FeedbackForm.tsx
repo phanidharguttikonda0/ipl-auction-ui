@@ -24,24 +24,48 @@ export const FeedbackForm = () => {
             return;
         }
 
-        if ((feedbackType === "bug" || feedbackType === "improvements") && !description.trim()) {
-            setMessage({ type: "error", text: "Please provide a description" });
-            setLoading(false);
-            return;
+        const isBugOrImprovement = feedbackType === "bug" || feedbackType === "improvements";
+
+        // Title validation
+        const titleValue = title.trim();
+        if (isBugOrImprovement) {
+            if (titleValue.length < 3) {
+                setMessage({ type: "error", text: "Title must be at least 3 characters long" });
+                setLoading(false);
+                return;
+            }
+        } else {
+            // For ratings, title is optional but if provided must be >= 3 chars
+            if (titleValue.length > 0 && titleValue.length < 3) {
+                setMessage({ type: "error", text: "Title must be at least 3 characters long" });
+                setLoading(false);
+                return;
+            }
         }
 
-        if ((feedbackType === "bug" || feedbackType === "improvements") && !title.trim()) {
-            setMessage({ type: "error", text: "Please provide a title" });
-            setLoading(false);
-            return;
+        // Description validation
+        const descriptionValue = description.trim();
+        if (isBugOrImprovement) {
+            if (descriptionValue.length < 3) {
+                setMessage({ type: "error", text: "Description must be at least 3 characters long" });
+                setLoading(false);
+                return;
+            }
+        } else {
+            // For ratings, description is optional but if provided must be >= 3 chars
+            if (descriptionValue.length > 0 && descriptionValue.length < 3) {
+                setMessage({ type: "error", text: "Description must be at least 3 characters long" });
+                setLoading(false);
+                return;
+            }
         }
 
         try {
             await apiClient.submitFeedback({
                 feedback_type: feedbackType,
                 rating_value: feedbackType === "rating" ? rating : undefined,
-                title: title.trim() || undefined,
-                description: description.trim() || undefined,
+                title: title.trim(),
+                description: description.trim(),
             });
 
             setMessage({ type: "success", text: "Thank you for your feedback!" });
@@ -76,8 +100,8 @@ export const FeedbackForm = () => {
                         type="button"
                         onClick={() => setFeedbackType("rating")}
                         className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium transition-colors ${feedbackType === "rating"
-                                ? "bg-gray-700 text-white shadow-sm"
-                                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                            ? "bg-gray-700 text-white shadow-sm"
+                            : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
                             }`}
                     >
                         <Star className="w-3 h-3" />
@@ -87,8 +111,8 @@ export const FeedbackForm = () => {
                         type="button"
                         onClick={() => setFeedbackType("bug")}
                         className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium transition-colors ${feedbackType === "bug"
-                                ? "bg-gray-700 text-white shadow-sm"
-                                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                            ? "bg-gray-700 text-white shadow-sm"
+                            : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
                             }`}
                     >
                         <Bug className="w-3 h-3" />
@@ -98,8 +122,8 @@ export const FeedbackForm = () => {
                         type="button"
                         onClick={() => setFeedbackType("improvements")}
                         className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium transition-colors ${feedbackType === "improvements"
-                                ? "bg-gray-700 text-white shadow-sm"
-                                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                            ? "bg-gray-700 text-white shadow-sm"
+                            : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
                             }`}
                     >
                         <Zap className="w-3 h-3" />
@@ -119,8 +143,8 @@ export const FeedbackForm = () => {
                             >
                                 <Star
                                     className={`w-8 h-8 ${star <= rating
-                                            ? "text-yellow-400 fill-yellow-400"
-                                            : "text-gray-600"
+                                        ? "text-yellow-400 fill-yellow-400"
+                                        : "text-gray-600"
                                         }`}
                                 />
                             </button>
@@ -157,8 +181,8 @@ export const FeedbackForm = () => {
                 {message && (
                     <div
                         className={`flex items-center gap-2 text-sm p-3 rounded-lg ${message.type === "success"
-                                ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                                : "bg-red-500/10 text-red-400 border border-red-500/20"
+                            ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                            : "bg-red-500/10 text-red-400 border border-red-500/20"
                             }`}
                     >
                         {message.type === "success" ? (
