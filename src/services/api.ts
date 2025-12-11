@@ -1,5 +1,4 @@
 import { API_BASE_URL } from "../constants";
-import { API_BASE_URL } from "../constants";
 import type { AuctionRoom, Participant, TeamDetails, PlayerDetails, RoomResponse, TeamName, SoldPlayerOutput, UnSoldPlayerOutput, FeedBackRequest, PoolPlayer } from "../types";
 
 export const getAuthToken = (): string | null => localStorage.getItem("auth_token");
@@ -110,8 +109,15 @@ export const apiClient = {
     return { hasAuth: false };
   },
 
-  async getAuctionsPlayed(pageNumber: number = 1, perPage: number = 10): Promise<AuctionRoom[]> {
-    const response = await fetch(`${API_BASE_URL}/rooms/get-auctions-played/${pageNumber}/${perPage}`, {
+  async getAuctionsPlayed(
+    perPage: number = 10,
+    lastRoomId: string = "0",
+    lastRecordTimeStamp: string = "0"
+  ): Promise<AuctionRoom[]> {
+    const encodedTimestamp = encodeURIComponent(btoa(lastRecordTimeStamp));
+    const url = `${API_BASE_URL}/rooms/get-auctions-played/${perPage}/${lastRoomId}/${encodedTimestamp}`;
+
+    const response = await fetch(url, {
       headers: getHeaders(),
     });
 
