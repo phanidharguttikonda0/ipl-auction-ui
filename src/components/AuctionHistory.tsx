@@ -31,6 +31,7 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
   );
   const [copiedRoom, setCopiedRoom] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [cursors, setCursors] = useState<{ roomId: string; createdAt: string }[]>([]);
   const PER_PAGE = 10;
 
   const copyToClipboard = async (roomId: string) => {
@@ -49,14 +50,38 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
   const loadAuctions = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiClient.getAuctionsPlayed(currentPage, PER_PAGE);
+      const cursor = currentPage > 1 ? cursors[currentPage - 2] : undefined;
+      const data = await apiClient.getAuctionsPlayed(
+        PER_PAGE,
+        cursor?.roomId,
+        cursor?.createdAt
+      );
       setAuctions(data);
+
+      if (data.length > 0) {
+        const lastItem = data[data.length - 1];
+        setCursors((prev) => {
+          // Prevent unnecessary updates if cursor already exists and matches
+          if (
+            prev[currentPage - 1]?.roomId === lastItem.room_id &&
+            prev[currentPage - 1]?.createdAt === lastItem.created_at
+          ) {
+            return prev;
+          }
+          const newCursors = [...prev];
+          newCursors[currentPage - 1] = {
+            roomId: lastItem.room_id,
+            createdAt: lastItem.created_at,
+          };
+          return newCursors;
+        });
+      }
     } catch (error) {
       console.error("Failed to load auctions:", error);
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [currentPage, cursors]);
 
   const toggleAuction = useCallback(
     async (roomId: string) => {
@@ -159,12 +184,12 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
                       </p>
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded border ${auction.status === "not_started"
-                            ? "text-green-400 bg-green-400/10 border-green-400/20"
-                            : auction.status === "in_progress"
-                              ? "text-gray-400 bg-gray-400/10 border-gray-400/20"
-                              : auction.status === "completed"
-                                ? "text-red-400 bg-red-400/10 border-red-400/20"
-                                : "text-blue-400 bg-blue-400/10 border-blue-400/20"
+                          ? "text-green-400 bg-green-400/10 border-green-400/20"
+                          : auction.status === "in_progress"
+                            ? "text-gray-400 bg-gray-400/10 border-gray-400/20"
+                            : auction.status === "completed"
+                              ? "text-red-400 bg-red-400/10 border-red-400/20"
+                              : "text-blue-400 bg-blue-400/10 border-blue-400/20"
                           }`}
                       >
                         {auction.status?.replace("_", " ").toUpperCase() ||
