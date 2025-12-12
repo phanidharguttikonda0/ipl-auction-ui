@@ -148,6 +148,7 @@ export interface AuctionState {
   myTeamName: string;
   myParticipantId: number;
   auctionStatus: AuctionStatus;
+  isStrictMode?: boolean;
 }
 
 // ... existing code ...

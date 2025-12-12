@@ -307,6 +307,9 @@ export const useAuctionWebSocket = ({
             onMessage?.(cmd === "mute" ? `Participant ${id} muted` : `Participant ${id} unmuted`);
           }
         }
+      } else if (data === "strict-mode") {
+        setAuctionState((prev) => ({ ...prev, isStrictMode: true }));
+        onMessage?.("Strict Mode Enabled");
       } else {
         onMessage?.(data);
       }

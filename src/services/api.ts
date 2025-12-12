@@ -156,8 +156,8 @@ export const apiClient = {
     return response.json();
   },
 
-  async createRoom(teamName: TeamName): Promise<RoomResponse> {
-    const response = await fetch(`${API_BASE_URL}/rooms/create-room/${encodeURIComponent(teamName)}`, {
+  async createRoom(teamName: TeamName, isStrictMode: boolean = false): Promise<RoomResponse> {
+    const response = await fetch(`${API_BASE_URL}/rooms/create-room/${encodeURIComponent(teamName)}/${isStrictMode}`, {
       headers: getHeaders(),
     });
 
