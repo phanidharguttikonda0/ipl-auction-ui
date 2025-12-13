@@ -1,7 +1,7 @@
 // src/pages/AuctionRoomPage.tsx
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Wifi, WifiOff, Gavel, Copy, Users } from "lucide-react";
+import { ArrowLeft, Wifi, WifiOff, Gavel, Copy, Users, ShieldAlert } from "lucide-react";
 import { useAuctionWebSocket } from "../hooks/useAuctionWebSocket";
 import { useAuctionAudio } from "../hooks/useAuctionAudio";
 import { PlayerCard } from "../components/auction/PlayerCard";
@@ -335,6 +335,13 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                   </button>
 
                   <p className="text-sm text-gray-400">Room ID: {roomId}</p>
+
+                  {auctionState.isStrictMode && (
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-red-900/30 border border-red-500/30 animate-pulse">
+                      <ShieldAlert size={12} className="text-red-400" />
+                      <span className="text-[10px] uppercase font-bold text-red-400 tracking-wider">Strict Mode</span>
+                    </div>
+                  )}
                   {/* Copied message */}
                   {copied && (
                     <span className="text-green-400 text-xs ml-2 animate-fade-in">
