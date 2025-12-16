@@ -64,6 +64,7 @@ export const useAuctionWebSocket = ({
     myTeamName: teamName,
     myParticipantId: participantId,
     auctionStatus: "pending",
+    chatMessages: [],
   });
 
   useEffect(() => {
@@ -458,6 +459,17 @@ export const useAuctionWebSocket = ({
     [],
   );
 
+  const handleChatMessage = useCallback(
+    (data: any) => {
+      setAuctionState((prev) => ({
+        ...prev,
+        chatMessages: [...prev.chatMessages, { team_name: data.team_name, message: data.message }],
+      }));
+      onMessage?.(`Chat from ${data.team_name}`);
+    },
+    [onMessage],
+  );
+
   // ---------- JSON router (incl. signaling) ----------
 
   const handleJsonMessage = useCallback(
@@ -541,6 +553,17 @@ export const useAuctionWebSocket = ({
         typeof data.is_unmuted === "boolean"
       ) {
         handleParticipantAudio(data as ParticipantAudioMessage);
+        return;
+      }
+
+      // Chat Message
+      if (
+        data &&
+        data.team_name &&
+        data.message &&
+        !data.participant_id // Ensure it's not a RoomResponse or NewJoinerMessage
+      ) {
+        handleChatMessage(data);
         return;
       }
 
@@ -760,6 +783,13 @@ export const useAuctionWebSocket = ({
     sendMessage("skip");
   }, [sendMessage]);
 
+  const sendChatMessage = useCallback(
+    (message: string) => {
+      sendMessage(`chat-${message}`);
+    },
+    [sendMessage],
+  );
+
   // ---------- Public API ----------
   return {
     connected,
@@ -779,5 +809,6 @@ export const useAuctionWebSocket = ({
     registerSignalHandler, // used by useAuctionAudio
     sendTextMessage: sendMessage, // new: used for plain text like "mute"/"unmute"/"rtm-..."
     timerRemaining: auctionState.timerRemaining, // the remaining time for the current player to bid 
+    sendChatMessage,
   };
 };
