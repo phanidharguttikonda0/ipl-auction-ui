@@ -115,6 +115,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const [hasSkippedCurrentPlayer, setHasSkippedCurrentPlayer] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+
   // Refs to handle circular dependencies and stale closures
   const hasSkippedRef = useRef(hasSkippedCurrentPlayer);
   const handleSkipRef = useRef<(reason?: string) => void>(() => { });
@@ -196,6 +197,27 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     onMessage: handleMessage,
     enabled: shouldConnect,
   });
+
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const prevChatLengthRef = useRef(0);
+
+  // Manage unread messages
+  useEffect(() => {
+    const currentLength = auctionState.chatMessages.length;
+    if (currentLength > prevChatLengthRef.current) {
+      if (!isChatOpen) {
+        setHasUnreadMessages(true);
+      }
+    }
+    prevChatLengthRef.current = currentLength;
+  }, [auctionState.chatMessages.length, isChatOpen]);
+
+  // Clear unread messages when chat opens
+  useEffect(() => {
+    if (isChatOpen) {
+      setHasUnreadMessages(false);
+    }
+  }, [isChatOpen]);
 
   const audioControls = useAuctionAudio({
     participantId: participantId ?? 0,
@@ -439,10 +461,10 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                 className="lg:hidden p-2 rounded-lg bg-blue-500/20 border border-blue-500/50 text-blue-400 hover:bg-blue-500/30 transition relative"
               >
                 <MessageSquare className="w-5 h-5" />
-                {auctionState.chatMessages.length > 0 && (
+                {hasUnreadMessages && (
                   <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                   </span>
                 )}
               </button>
