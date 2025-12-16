@@ -39,7 +39,15 @@ export const useAuctionWebSocket = ({
   // For WebRTC / audio signaling
   const signalHandlersRef = useRef(new Set<(message: any) => boolean>());
 
+  // Use ref for onMessage to avoid stale closures and unnecessary reconnects
+  const onMessageRef = useRef(onMessage);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
   const [connected, setConnected] = useState(false);
+
+
 
   const [auctionState, setAuctionState] = useState<AuctionState>({
     participants: new Map(),
@@ -168,10 +176,10 @@ export const useAuctionWebSocket = ({
         return nextState;
       });
 
-      onMessage?.(`${data.team_name} joined / updated`);
+      onMessageRef.current?.(`${data.team_name} joined / updated`);
       console.log(`🟢 Participant processed: ${data.team_name} (id=${data.id})`);
     },
-    [participantId, onMessage],
+    [participantId],
   );
 
   const handleParticipantList = useCallback(
@@ -197,9 +205,9 @@ export const useAuctionWebSocket = ({
         participants: newMap,
       }));
 
-      onMessage?.("Loaded participant list");
+      onMessageRef.current?.("Loaded participant list");
     },
-    [onMessage],
+    [],
   );
 
   // ---------- String messages ----------
@@ -207,7 +215,7 @@ export const useAuctionWebSocket = ({
   const handleStringMessage = useCallback(
     (data: string) => {
       if (data === "UnSold") {
-        onMessage?.("Player UNSOLD!");
+        onMessageRef.current?.("Player UNSOLD!");
         setAuctionState((prev) => {
           const playerToUse = prev.previousPlayer || prev.currentPlayer;
 
@@ -249,7 +257,7 @@ export const useAuctionWebSocket = ({
         });
         stopTimer();
       } else if (data === "exit" || data === "Auction was completed, Room was Closed") {
-        onMessage?.("Auction ended by host");
+        onMessageRef.current?.("Auction ended by host");
         setAuctionState((prev) => ({
           ...prev,
           auctionStatus: "ended_by_host",
@@ -260,13 +268,13 @@ export const useAuctionWebSocket = ({
         }));
         wsRef.current?.close();
       } else if (data === "Auction Completed") {
-        onMessage?.("Auction completed!");
+        onMessageRef.current?.("Auction completed!");
         setAuctionState((prev) => ({ ...prev, auctionStatus: "completed" }));
       } else if (data.includes("Auction Stopped Temporarily")) {
-        onMessage?.(data);
+        onMessageRef.current?.(data);
         setAuctionState((prev) => ({ ...prev, auctionStatus: "stopped" }));
       } else if (data.includes("Auction was Paused") || data === "Auction was Paused") {
-        onMessage?.(data);
+        onMessageRef.current?.(data);
         setAuctionState((prev) => ({
           ...prev,
           auctionStatus: "stopped",
@@ -305,17 +313,18 @@ export const useAuctionWebSocket = ({
               }
               return { ...prev, participants: newParticipants };
             });
-            onMessage?.(cmd === "mute" ? `Participant ${id} muted` : `Participant ${id} unmuted`);
+
+            onMessageRef.current?.(cmd === "mute" ? `Participant ${id} muted` : `Participant ${id} unmuted`);
           }
         }
       } else if (data === "strict-mode") {
         setAuctionState((prev) => ({ ...prev, isStrictMode: true }));
-        onMessage?.("Strict Mode Enabled");
+        onMessageRef.current?.("Strict Mode Enabled");
       } else {
-        onMessage?.(data);
+        onMessageRef.current?.(data);
       }
     },
-    [onMessage, stopTimer],
+    [stopTimer],
   );
 
   // ---------- Auction JSON handlers ----------
@@ -416,10 +425,10 @@ export const useAuctionWebSocket = ({
         };
       });
 
-      onMessage?.(`SOLD to ${data.team_name} for ₹${data.sold_price}Cr`);
+      onMessageRef.current?.(`SOLD to ${data.team_name} for ₹${data.sold_price}Cr`);
       stopTimer();
     },
-    [teamName, onMessage, stopTimer],
+    [teamName, stopTimer],
   );
 
   const handleParticipantDisconnected = useCallback(
@@ -435,9 +444,9 @@ export const useAuctionWebSocket = ({
         }
         return { ...prev, participants: newParticipants };
       });
-      onMessage?.(`${data.team_name} disconnected`);
+      onMessageRef.current?.(`${data.team_name} disconnected`);
     },
-    [onMessage],
+    [],
   );
 
   const handleParticipantAudio = useCallback(
@@ -465,9 +474,9 @@ export const useAuctionWebSocket = ({
         ...prev,
         chatMessages: [...prev.chatMessages, { team_name: data.team_name, message: data.message }],
       }));
-      onMessage?.(`Chat from ${data.team_name}`);
+      onMessageRef.current?.(`Chat from ${data.team_name}`);
     },
-    [onMessage],
+    [],
   );
 
   // ---------- JSON router (incl. signaling) ----------
@@ -779,8 +788,12 @@ export const useAuctionWebSocket = ({
     sendMessage("rtm-cancel");
   }, [sendMessage]);
 
-  const sendSkip = useCallback(() => {
-    sendMessage("skip");
+  const sendSkip = useCallback((reason?: string) => {
+    if (reason) {
+      sendMessage(`skip-${reason}`);
+    } else {
+      sendMessage("skip");
+    }
   }, [sendMessage]);
 
   const sendChatMessage = useCallback(

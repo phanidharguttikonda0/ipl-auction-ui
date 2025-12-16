@@ -115,6 +115,14 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const [hasSkippedCurrentPlayer, setHasSkippedCurrentPlayer] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  // Refs to handle circular dependencies and stale closures
+  const hasSkippedRef = useRef(hasSkippedCurrentPlayer);
+  const handleSkipRef = useRef<(reason?: string) => void>(() => { });
+
+  useEffect(() => {
+    hasSkippedRef.current = hasSkippedCurrentPlayer;
+  }, [hasSkippedCurrentPlayer]);
+
   const handleMessage = useCallback((message: string) => {
     // Handle "Use RTM" message
     if (message === "Use RTM" || message.includes("Use RTM")) {
@@ -140,6 +148,14 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     }
 
     // Handle other messages
+    if (message === "Bid not allowed, Check strict mode rules") {
+      setToast({ message, type: "error" });
+      if (!hasSkippedRef.current) {
+        handleSkipRef.current("strict_mode stage wise bidding");
+      }
+      return;
+    }
+
     if (message.toLowerCase().includes("sold")) {
       setToast({ message, type: "success" });
     } else if (message.toLowerCase().includes("unsold")) {
@@ -294,14 +310,52 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     setToast({ message: "RTM offer cancelled", type: "info" });
   }, [sendRTMCancel]);
 
-  const handleSkip = useCallback(() => {
+  const handleSkip = useCallback((reason?: string) => {
     if (hasSkippedCurrentPlayer) {
       return;
     }
-    sendSkip();
+    sendSkip(reason);
     setHasSkippedCurrentPlayer(true);
     setToast({ message: "You skipped this player", type: "info" });
   }, [hasSkippedCurrentPlayer, sendSkip]);
+
+  // Keep handleSkipRef updated
+  useEffect(() => {
+    handleSkipRef.current = handleSkip;
+  }, [handleSkip]);
+
+  // Auto-skip scenarios logic
+  useEffect(() => {
+    if (auctionState.auctionStatus !== "in_progress" || !auctionState.currentPlayer || hasSkippedCurrentPlayer) {
+      return;
+    }
+
+    const myParticipant = auctionState.participants.get(participantId ?? 0);
+    if (!myParticipant) return;
+
+    // 1. Foreign player limit
+    const foreignLimitReached = (myParticipant.foreign_players_brought ?? 0) >= 8;
+    const isForeignPlayer = !auctionState.currentPlayer.is_indian;
+    const shouldSkipForeign = foreignLimitReached && isForeignPlayer;
+
+    // 2. Insufficient balance (Strict check: if balance < currentBid, you can't match/raise)
+    const insufficientBalance = auctionState.myBalance < auctionState.currentBid;
+
+    if (shouldSkipForeign) {
+      handleSkip("foreign_limit");
+    } else if (insufficientBalance) {
+      handleSkip("insufficient balance");
+    }
+  }, [
+    auctionState.auctionStatus,
+    auctionState.currentPlayer,
+    auctionState.myBalance,
+    auctionState.currentBid,
+    auctionState.participants,
+    participantId,
+    hasSkippedCurrentPlayer,
+    handleSkip
+  ]);
 
   if (loading || participantId === null || teamName === null) {
     return (
