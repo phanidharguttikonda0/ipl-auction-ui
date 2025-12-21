@@ -149,6 +149,12 @@ export interface AuctionState {
   myParticipantId: number;
   auctionStatus: AuctionStatus;
   isStrictMode?: boolean;
+  chatMessages: ChatMessage[];
+}
+
+export interface ChatMessage {
+  team_name: string;
+  message: string;
 }
 
 // ... existing code ...
