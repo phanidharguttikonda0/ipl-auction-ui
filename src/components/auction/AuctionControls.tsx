@@ -97,7 +97,7 @@ export const AuctionControls = ({
           Skip
         </button>
 
-        {/* SKIP POOL button - only shown when isSkippedPool is false */}
+        {/* SKIP POOL button - only shown when pool is NOT skipped */}
         {!isSkippedPool && (
           <button
             onClick={() => onSkipPool()}

@@ -114,7 +114,6 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const [isRtmAcceptTimerActive, setIsRtmAcceptTimerActive] = useState(false);
   const [hasSkippedCurrentPlayer, setHasSkippedCurrentPlayer] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isSkippedPool, setIsSkippedPool] = useState(false);
 
 
 
@@ -127,18 +126,6 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   }, [hasSkippedCurrentPlayer]);
 
   const handleMessage = useCallback((message: string) => {
-    // Handle "is_skipped:true" message to enable SKIP POOL button
-    if (message === "is_skipped:true") {
-      setIsSkippedPool(true);
-      return;
-    }
-
-    // Handle "is_skipped:false" message to disable SKIP POOL button
-    if (message === "is_skipped:false") {
-      setIsSkippedPool(false);
-      return;
-    }
-
     // Handle "Use RTM" message
     if (message === "Use RTM" || message.includes("Use RTM")) {
       setShowRTMDialog(true);
@@ -562,8 +549,8 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                 }}
                 disabled={auctionState.isPoolSkipped === true}
                 className={`w-full py-3 px-6 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${auctionState.isPoolSkipped === true
-                    ? "bg-gray-700/50 text-gray-500 cursor-not-allowed border border-gray-600"
-                    : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl border border-orange-400/50"
+                  ? "bg-gray-700/50 text-gray-500 cursor-not-allowed border border-gray-600"
+                  : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl border border-orange-400/50"
                   }`}
               >
                 <SkipForward className="w-5 h-5" />
@@ -627,7 +614,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                   !auctionState.currentPlayer.is_indian)
               }
               disableSkip={hasSkippedCurrentPlayer}
-              isSkippedPool={isSkippedPool}
+              isSkippedPool={auctionState.isPoolSkipped}
             />
           </div>
 
