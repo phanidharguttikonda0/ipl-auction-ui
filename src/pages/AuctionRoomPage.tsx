@@ -392,10 +392,10 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
 
     // Send ONLY "skip-current-pool" message, no additional skip message
     sendTextMessage("skip-current-pool");
-    setHasSkippedCurrentPlayer(true);
+    // Don't disable bid/skip buttons - user can still bid after voting
     setShowSkipPoolConfirm(false);
     setSkipPoolConfirmChecked(false);
-    setToast({ message: "You skipped this pool", type: "info" });
+    setToast({ message: "Your vote to skip this pool has been registered", type: "info" });
   }, [skipPoolConfirmChecked, sendTextMessage]);
 
   // Keep handleSkipRef updated
@@ -818,12 +818,12 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
         showSkipPoolConfirm && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
-              <h3 className="text-xl font-bold text-white mb-4">Confirm Skip Pool</h3>
+              <h3 className="text-xl font-bold text-white mb-4">Confirm Skip Pool Vote</h3>
               <p className="text-gray-300 mb-4">
-                Are you sure you want to skip the current pool?
+                Are you sure you want to vote to skip the current pool?
               </p>
               <p className="text-sm text-yellow-400 mb-6">
-                ⚠️ This action will skip all remaining players in pool {auctionState.currentPlayer?.pool_no}.
+                ⚠️ Your vote to skip pool {auctionState.currentPlayer?.pool_no} will be counted. The pool will only be skipped if all participants vote to skip.
               </p>
 
               {/* Checkbox confirmation */}
@@ -835,7 +835,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                   className="mt-1 w-4 h-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-2 focus:ring-purple-500 cursor-pointer"
                 />
                 <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  I understand that this will skip all remaining players in this pool
+                  I understand that my vote to skip this pool cannot be reverted
                 </span>
               </label>
 
@@ -857,7 +857,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                     : "bg-gray-700 text-gray-500 cursor-not-allowed"
                     }`}
                 >
-                  Confirm Skip Pool
+                  Confirm Vote
                 </button>
               </div>
             </div>
