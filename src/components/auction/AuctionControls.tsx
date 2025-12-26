@@ -10,11 +10,13 @@ interface AuctionControlsProps {
   onStart: () => void;
   onBid: () => void;
   onSkip: () => void;
+  onSkipPool: () => void;
   onPause: () => void;
   onEnd: () => void;
   timerRemaining: number;
   disablePlaceBid: boolean;
   disableSkip: boolean;
+  isSkippedPool?: boolean;
 }
 
 export const AuctionControls = ({
@@ -25,11 +27,13 @@ export const AuctionControls = ({
   onStart,
   onBid,
   onSkip,
+  onSkipPool,
   onPause,
   onEnd,
   timerRemaining,
   disablePlaceBid,
   disableSkip,
+  isSkippedPool = false,
 }: AuctionControlsProps) => {
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const [endConfirmText, setEndConfirmText] = useState("");
@@ -92,6 +96,20 @@ export const AuctionControls = ({
         >
           Skip
         </button>
+
+        {/* SKIP POOL button - only shown when isSkippedPool is true */}
+        {!isSkippedPool && (
+          <button
+            onClick={() => onSkipPool()}
+            disabled={!canSkip}
+            className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${canSkip
+              ? "bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/50 text-purple-400"
+              : "bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-700"
+              }`}
+          >
+            SKIP POOL
+          </button>
+        )}
 
         {!canBid && myBalance < currentBid && auctionStatus === "in_progress" && (
           <p className="text-xs text-red-400 text-center">

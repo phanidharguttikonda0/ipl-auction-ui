@@ -114,6 +114,8 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const [isRtmAcceptTimerActive, setIsRtmAcceptTimerActive] = useState(false);
   const [hasSkippedCurrentPlayer, setHasSkippedCurrentPlayer] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isSkippedPool, setIsSkippedPool] = useState(false);
+
 
 
   // Refs to handle circular dependencies and stale closures
@@ -125,6 +127,18 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   }, [hasSkippedCurrentPlayer]);
 
   const handleMessage = useCallback((message: string) => {
+    // Handle "is_skipped:true" message to enable SKIP POOL button
+    if (message === "is_skipped:true") {
+      setIsSkippedPool(true);
+      return;
+    }
+
+    // Handle "is_skipped:false" message to disable SKIP POOL button
+    if (message === "is_skipped:false") {
+      setIsSkippedPool(false);
+      return;
+    }
+
     // Handle "Use RTM" message
     if (message === "Use RTM" || message.includes("Use RTM")) {
       setShowRTMDialog(true);
@@ -235,6 +249,12 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     setHasSkippedCurrentPlayer(false);
   }, [auctionState.currentPlayer?.id]);
 
+  // Send "get-is-skipped-pool" message when WebSocket is connected
+  useEffect(() => {
+    if (connected && sendTextMessage) {
+      sendTextMessage("get-is-skipped-pool");
+    }
+  }, [connected, sendTextMessage]);
   // Reset pool skip state when pool number changes
   const prevPoolNoForSkipRef = useRef<number | undefined>(undefined);
   useEffect(() => {
@@ -353,6 +373,17 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     setHasSkippedCurrentPlayer(true);
     setToast({ message: "You skipped this player", type: "info" });
   }, [hasSkippedCurrentPlayer, sendSkip]);
+
+  // Handle SKIP POOL button - only sends "skip-current-pool" message
+  const handleSkipPool = useCallback(() => {
+    if (hasSkippedCurrentPlayer) {
+      return;
+    }
+    // Send ONLY "skip-current-pool" message, no additional skip message
+    sendTextMessage("skip-current-pool");
+    setHasSkippedCurrentPlayer(true);
+    setToast({ message: "You skipped this pool", type: "info" });
+  }, [hasSkippedCurrentPlayer, sendTextMessage]);
 
   // Keep handleSkipRef updated
   useEffect(() => {
@@ -585,6 +616,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
               onStart={startAuction}
               onBid={placeBid}
               onSkip={handleSkip}
+              onSkipPool={handleSkipPool}
               onPause={pauseAuction}
               onEnd={endAuction}
               timerRemaining={timerRemaining}
@@ -595,6 +627,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                   !auctionState.currentPlayer.is_indian)
               }
               disableSkip={hasSkippedCurrentPlayer}
+              isSkippedPool={isSkippedPool}
             />
           </div>
 
