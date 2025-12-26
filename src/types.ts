@@ -150,6 +150,7 @@ export interface AuctionState {
   auctionStatus: AuctionStatus;
   isStrictMode?: boolean;
   chatMessages: ChatMessage[];
+  isPoolSkipped?: boolean;
 }
 
 export interface ChatMessage {
