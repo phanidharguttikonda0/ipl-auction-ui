@@ -115,6 +115,10 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   const [hasSkippedCurrentPlayer, setHasSkippedCurrentPlayer] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  // Skip pool confirmation states
+  const [showSkipPoolConfirm, setShowSkipPoolConfirm] = useState(false);
+  const [skipPoolConfirmChecked, setSkipPoolConfirmChecked] = useState(false);
+
 
 
   // Refs to handle circular dependencies and stale closures
@@ -360,16 +364,39 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     setToast({ message: "You skipped this player", type: "info" });
   }, [hasSkippedCurrentPlayer, sendSkip]);
 
-  // Handle SKIP POOL button - only sends "skip-current-pool" message
+  // Handle SKIP POOL button - shows confirmation dialog
   const handleSkipPool = useCallback(() => {
     if (hasSkippedCurrentPlayer) {
       return;
     }
+
+    // Check if this is the last pool (pool_no 12)
+    if (auctionState.currentPlayer?.pool_no === 12) {
+      setToast({
+        message: "Cannot skip the last pool. Please use End Auction instead.",
+        type: "warning"
+      });
+      return;
+    }
+
+    // Show confirmation dialog
+    setShowSkipPoolConfirm(true);
+  }, [hasSkippedCurrentPlayer, auctionState.currentPlayer?.pool_no]);
+
+  // Handle skip pool confirmation - sends "skip-current-pool" message
+  const handleSkipPoolConfirm = useCallback(() => {
+    if (!skipPoolConfirmChecked) {
+      setToast({ message: "Please confirm by checking the box", type: "warning" });
+      return;
+    }
+
     // Send ONLY "skip-current-pool" message, no additional skip message
     sendTextMessage("skip-current-pool");
     setHasSkippedCurrentPlayer(true);
+    setShowSkipPoolConfirm(false);
+    setSkipPoolConfirmChecked(false);
     setToast({ message: "You skipped this pool", type: "info" });
-  }, [hasSkippedCurrentPlayer, sendTextMessage]);
+  }, [skipPoolConfirmChecked, sendTextMessage]);
 
   // Keep handleSkipRef updated
   useEffect(() => {
@@ -596,6 +623,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
               }
               disableSkip={hasSkippedCurrentPlayer}
               isSkippedPool={auctionState.isPoolSkipped}
+              currentPoolNo={auctionState.currentPlayer?.pool_no}
             />
           </div>
 
@@ -778,6 +806,58 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
                   className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors font-medium"
                 >
                   Accept
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Skip Pool Confirmation Dialog */}
+      {
+        showSkipPoolConfirm && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-4">Confirm Skip Pool</h3>
+              <p className="text-gray-300 mb-4">
+                Are you sure you want to skip the current pool?
+              </p>
+              <p className="text-sm text-yellow-400 mb-6">
+                ⚠️ This action will skip all remaining players in pool {auctionState.currentPlayer?.pool_no}.
+              </p>
+
+              {/* Checkbox confirmation */}
+              <label className="flex items-start gap-3 mb-6 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={skipPoolConfirmChecked}
+                  onChange={(e) => setSkipPoolConfirmChecked(e.target.checked)}
+                  className="mt-1 w-4 h-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  I understand that this will skip all remaining players in this pool
+                </span>
+              </label>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowSkipPoolConfirm(false);
+                    setSkipPoolConfirmChecked(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSkipPoolConfirm}
+                  disabled={!skipPoolConfirmChecked}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${skipPoolConfirmChecked
+                    ? "bg-purple-500 hover:bg-purple-600 text-white"
+                    : "bg-gray-700 text-gray-500 cursor-not-allowed"
+                    }`}
+                >
+                  Confirm Skip Pool
                 </button>
               </div>
             </div>

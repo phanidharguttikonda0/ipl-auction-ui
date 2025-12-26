@@ -17,6 +17,7 @@ interface AuctionControlsProps {
   disablePlaceBid: boolean;
   disableSkip: boolean;
   isSkippedPool?: boolean;
+  currentPoolNo?: number;
 }
 
 export const AuctionControls = ({
@@ -34,6 +35,7 @@ export const AuctionControls = ({
   disablePlaceBid,
   disableSkip,
   isSkippedPool = false,
+  currentPoolNo,
 }: AuctionControlsProps) => {
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const [endConfirmText, setEndConfirmText] = useState("");
@@ -101,14 +103,21 @@ export const AuctionControls = ({
         {!isSkippedPool && (
           <button
             onClick={() => onSkipPool()}
-            disabled={!canSkip}
-            className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${canSkip
-              ? "bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/50 text-purple-400"
-              : "bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-700"
+            disabled={!canSkip || currentPoolNo === 12}
+            title={currentPoolNo === 12 ? "Cannot skip the last pool. Please use End Auction instead." : ""}
+            className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${canSkip && currentPoolNo !== 12
+                ? "bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/50 text-purple-400"
+                : "bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-700"
               }`}
           >
             SKIP POOL
           </button>
+        )}
+
+        {currentPoolNo === 12 && !isSkippedPool && (
+          <p className="text-xs text-yellow-400 text-center">
+            Last pool - use End Auction instead
+          </p>
         )}
 
         {!canBid && myBalance < currentBid && auctionStatus === "in_progress" && (
