@@ -73,6 +73,7 @@ export const useAuctionWebSocket = ({
     myParticipantId: participantId,
     auctionStatus: "pending",
     chatMessages: [],
+    isPoolSkipped: false,
   });
 
   useEffect(() => {
@@ -320,6 +321,12 @@ export const useAuctionWebSocket = ({
       } else if (data === "strict-mode") {
         setAuctionState((prev) => ({ ...prev, isStrictMode: true }));
         onMessageRef.current?.("Strict Mode Enabled");
+      } else if (data === "is_skipped:false") {
+        setAuctionState((prev) => ({ ...prev, isPoolSkipped: false }));
+        onMessageRef.current?.("Pool not skipped");
+      } else if (data === "is_skipped:true") {
+        setAuctionState((prev) => ({ ...prev, isPoolSkipped: true }));
+        onMessageRef.current?.("Pool skipped");
       } else {
         onMessageRef.current?.(data);
       }
@@ -576,6 +583,18 @@ export const useAuctionWebSocket = ({
         return;
       }
 
+      // Pool Skip Status
+      if (
+        data &&
+        typeof data === "object" &&
+        "is_skipped" in data &&
+        typeof data.is_skipped === "boolean"
+      ) {
+        setAuctionState((prev) => ({ ...prev, isPoolSkipped: data.is_skipped }));
+        onMessageRef.current?.(data.is_skipped ? "Pool skipped" : "Pool not skipped");
+        return;
+      }
+
       console.log("⚠️ Unhandled JSON message:", data);
     },
     [
@@ -664,6 +683,8 @@ export const useAuctionWebSocket = ({
       setConnected(true);
       startPing(); // <— start 25s keepalive ping
       fetchInitialPlayers();
+      // Send initial request to get pool skip status
+      ws.send("get-is-skipped-pool");
     };
 
     ws.onmessage = (event) => {
@@ -803,6 +824,14 @@ export const useAuctionWebSocket = ({
     [sendMessage],
   );
 
+  const sendGetIsSkippedPool = useCallback(() => {
+    sendMessage("get-is-skipped-pool");
+  }, [sendMessage]);
+
+  const sendSkipCurrentPool = useCallback(() => {
+    sendMessage("skip-current-pool");
+  }, [sendMessage]);
+
   // ---------- Public API ----------
   return {
     connected,
@@ -823,5 +852,7 @@ export const useAuctionWebSocket = ({
     sendTextMessage: sendMessage, // new: used for plain text like "mute"/"unmute"/"rtm-..."
     timerRemaining: auctionState.timerRemaining, // the remaining time for the current player to bid 
     sendChatMessage,
+    sendGetIsSkippedPool,
+    sendSkipCurrentPool,
   };
 };
