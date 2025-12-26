@@ -1,7 +1,7 @@
 // src/pages/AuctionRoomPage.tsx
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Wifi, WifiOff, Gavel, Copy, Users, ShieldAlert, MessageSquare } from "lucide-react";
+import { ArrowLeft, Wifi, WifiOff, Gavel, Copy, Users, ShieldAlert, MessageSquare, SkipForward } from "lucide-react";
 import { useAuctionWebSocket } from "../hooks/useAuctionWebSocket";
 import { useAuctionAudio } from "../hooks/useAuctionAudio";
 import { PlayerCard } from "../components/auction/PlayerCard";
@@ -189,6 +189,8 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
     sendTextMessage, // NEW
     sendChatMessage,
     timerRemaining, // the remaining time for the current player to bid 
+    sendGetIsSkippedPool,
+    sendSkipCurrentPool,
   } = useAuctionWebSocket({
     roomId,
     participantId: participantId ?? 0,
@@ -232,6 +234,17 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
   useEffect(() => {
     setHasSkippedCurrentPlayer(false);
   }, [auctionState.currentPlayer?.id]);
+
+  // Reset pool skip state when pool number changes
+  const prevPoolNoForSkipRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    const currentPoolNo = auctionState.currentPlayer?.pool_no;
+    if (currentPoolNo && currentPoolNo !== prevPoolNoForSkipRef.current) {
+      prevPoolNoForSkipRef.current = currentPoolNo;
+      // Request current pool skip status when pool changes
+      sendGetIsSkippedPool();
+    }
+  }, [auctionState.currentPlayer?.pool_no, sendGetIsSkippedPool]);
 
   // Auto-select current pool when it changes (only once per pool change)
   const prevPoolNoRef = useRef<number | undefined>(undefined);
@@ -509,6 +522,24 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
 
           {/* CENTER (Player card + Controls) — sticky removed */}
           <div className="lg:col-span-6 order-1 lg:order-2 flex flex-col gap-6">
+            {/* Skip Pool Button */}
+            {auctionState.auctionStatus === "in_progress" && auctionState.currentPlayer && (
+              <button
+                onClick={() => {
+                  sendSkipCurrentPool();
+                  setToast({ message: "Pool skip requested", type: "info" });
+                }}
+                disabled={auctionState.isPoolSkipped === true}
+                className={`w-full py-3 px-6 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${auctionState.isPoolSkipped === true
+                    ? "bg-gray-700/50 text-gray-500 cursor-not-allowed border border-gray-600"
+                    : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl border border-orange-400/50"
+                  }`}
+              >
+                <SkipForward className="w-5 h-5" />
+                {auctionState.isPoolSkipped ? "Pool Skipped" : "Skip Pool"}
+              </button>
+            )}
+
             {auctionState.currentPlayer ? (
               <PlayerCard
                 player={auctionState.currentPlayer}
