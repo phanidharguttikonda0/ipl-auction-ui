@@ -1,15 +1,18 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Heart } from "lucide-react";
 import { RulesPanel } from "../components/RulesPanel";
 import { UserProfile } from "../components/UserProfile";
 import { AuctionHistory } from "../components/AuctionHistory";
 import { RoomActions } from "../components/RoomActions";
+import { DonateModal } from "../components/DonateModal";
 import { getStoredUser } from "../utils";
 import { clearAuthToken } from "../services/api";
 
 export const HomePage = () => {
   const navigate = useNavigate();
   const user = getStoredUser();
+  const [showDonateModal, setShowDonateModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -86,7 +89,16 @@ export const HomePage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">IPL Auction</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
+            <h1 className="text-3xl md:text-4xl font-bold text-white">IPL Auction</h1>
+            <button
+              onClick={() => setShowDonateModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-pink-500/50 group self-start sm:self-auto"
+            >
+              <Heart className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
+              <span>Support This Project</span>
+            </button>
+          </div>
           <p className="text-gray-400">Manage your team and participate in live auctions</p>
         </header>
 
@@ -112,6 +124,8 @@ export const HomePage = () => {
           </div>
         </div>
       </div>
+
+      {showDonateModal && <DonateModal onClose={() => setShowDonateModal(false)} />}
     </div>
   );
 };
