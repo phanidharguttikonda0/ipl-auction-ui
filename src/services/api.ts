@@ -146,8 +146,8 @@ export const apiClient = {
     return response.json();
   },
 
-  async getTeamPlayers(participantId: number): Promise<PlayerDetails[]> {
-    const response = await fetch(`${API_BASE_URL}/players/get-team-players/${participantId}`, {
+  async getTeamPlayers(participantId: number, roomStatus: string): Promise<PlayerDetails[]> {
+    const response = await fetch(`${API_BASE_URL}/players/get-team-players/${participantId}/${roomStatus}`, {
       headers: getHeaders(),
     });
 

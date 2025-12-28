@@ -676,6 +676,7 @@ export const AuctionRoomPage = ({ roomId }: AuctionRoomPageProps) => {
       {selectedParticipant && (
         <TeamDetailsModal
           participantId={selectedParticipant}
+          roomStatus="in_progress"
           onClose={() => setSelectedParticipant(null)}
         />
       )}

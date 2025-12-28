@@ -5,10 +5,11 @@ import type { TeamDetails, PlayerDetails } from "../types";
 
 interface TeamDetailsModalProps {
   participantId: number;
+  roomStatus: string;
   onClose: () => void;
 }
 
-export const TeamDetailsModal = ({ participantId, onClose }: TeamDetailsModalProps) => {
+export const TeamDetailsModal = ({ participantId, roomStatus, onClose }: TeamDetailsModalProps) => {
   const [teamDetails, setTeamDetails] = useState<TeamDetails | null>(null);
   const [players, setPlayers] = useState<PlayerDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +24,7 @@ export const TeamDetailsModal = ({ participantId, onClose }: TeamDetailsModalPro
       setLoading(true);
       const [details, playersList] = await Promise.all([
         apiClient.getTeamDetails(participantId),
-        apiClient.getTeamPlayers(participantId),
+        apiClient.getTeamPlayers(participantId, roomStatus),
       ]);
       setTeamDetails(details);
       setPlayers(playersList);
@@ -32,7 +33,7 @@ export const TeamDetailsModal = ({ participantId, onClose }: TeamDetailsModalPro
     } finally {
       setLoading(false);
     }
-  }, [participantId]);
+  }, [participantId, roomStatus]);
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">

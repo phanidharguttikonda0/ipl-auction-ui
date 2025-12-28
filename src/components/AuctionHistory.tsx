@@ -26,9 +26,10 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
   const [loadingParticipants, setLoadingParticipants] = useState<
     Record<string, boolean>
   >({});
-  const [selectedParticipant, setSelectedParticipant] = useState<number | null>(
-    null
-  );
+  const [selectedParticipant, setSelectedParticipant] = useState<{
+    participantId: number;
+    roomId: string;
+  } | null>(null);
   const [copiedRoom, setCopiedRoom] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [cursors, setCursors] = useState<{ roomId: string; createdAt: string }[]>([]);
@@ -242,7 +243,10 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
                         <button
                           key={participant.participant_id}
                           onClick={() =>
-                            setSelectedParticipant(participant.participant_id)
+                            setSelectedParticipant({
+                              participantId: participant.participant_id,
+                              roomId: auction.room_id,
+                            })
                           }
                           className="w-full text-left px-3 py-2 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg transition-colors"
                         >
@@ -274,7 +278,8 @@ export const AuctionHistory = ({ onSelectAuction }: AuctionHistoryProps) => {
 
       {selectedParticipant && (
         <TeamDetailsModal
-          participantId={selectedParticipant}
+          participantId={selectedParticipant.participantId}
+          roomStatus={auctions.find((a) => a.room_id === selectedParticipant.roomId)?.status || ""}
           onClose={() => setSelectedParticipant(null)}
         />
       )}
