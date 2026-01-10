@@ -86,40 +86,112 @@ export const HomePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-white">IPL Auction</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+        {/* Hero Section */}
+        <header className="pt-8 pb-12 md:pt-12 md:pb-16">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <div className="space-y-2 animate-fade-in-up">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold">
+                <span className="gradient-text-ipl">IPL</span>
+                <span className="text-white"> Auction</span>
+              </h1>
+              <p className="text-lg md:text-xl text-gray-400 max-w-2xl animate-fade-in-up delay-100">
+                Experience the thrill of building your dream cricket team in real-time multiplayer auctions
+              </p>
+            </div>
+
             <button
               onClick={() => setShowDonateModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-pink-500/50 group self-start sm:self-auto"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 bg-size-200 hover:bg-right-bottom text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 group self-start sm:self-auto animate-fade-in-up delay-200"
+              style={{ backgroundSize: '200% 100%', backgroundPosition: 'left bottom' }}
             >
               <Heart className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
               <span>Support This Project</span>
             </button>
           </div>
-          <p className="text-gray-400">Manage your team and participate in live auctions</p>
+
+          {/* Feature Pills */}
+          <div className="flex flex-wrap gap-3 mb-6 animate-fade-in-up delay-300">
+            <div className="px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full backdrop-blur-sm">
+              <span className="text-sm font-medium text-blue-300">🏏 Live Multiplayer</span>
+            </div>
+            <div className="px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full backdrop-blur-sm">
+              <span className="text-sm font-medium text-purple-300">⚡ Real-time Bidding</span>
+            </div>
+            <div className="px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-full backdrop-blur-sm">
+              <span className="text-sm font-medium text-orange-300">🎯 Strategic Gameplay</span>
+            </div>
+          </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-12">
+          {/* Left Sidebar - Rules & Feedback */}
           <div className="lg:col-span-3 space-y-6 order-3 lg:order-1">
-            <RulesPanel />
+            <div className="animate-slide-in-left delay-400">
+              <RulesPanel />
+            </div>
           </div>
 
-          <div className="lg:col-span-6 space-y-6 order-2 lg:order-2">
-            <UserProfile
-              email={user.gmail}
-              favoriteTeam={user.favorite_team}
-              onLogout={handleLogout}
-              onEditTeam={handleEditTeam}
-            />
-            <AuctionHistory />
-          </div>
-
-          <div className="lg:col-span-3 order-1 lg:order-3">
-            <div className="lg:sticky lg:top-6">
+          {/* Center Column - Primary Actions & History */}
+          <div className="lg:col-span-6 space-y-6 order-1 lg:order-2">
+            {/* Room Actions - Primary CTA */}
+            <div className="animate-fade-in-up delay-100">
               <RoomActions onRoomReady={handleEnterAuction} />
+            </div>
+
+            {/* User Profile */}
+            <div className="animate-fade-in-up delay-200">
+              <UserProfile
+                email={user.gmail}
+                favoriteTeam={user.favorite_team}
+                onLogout={handleLogout}
+                onEditTeam={handleEditTeam}
+              />
+            </div>
+
+            {/* Auction History */}
+            <div className="animate-fade-in-up delay-300">
+              <AuctionHistory />
+            </div>
+          </div>
+
+          {/* Right Sidebar - Quick Stats or Additional Info */}
+          <div className="lg:col-span-3 order-2 lg:order-3">
+            <div className="lg:sticky lg:top-6 space-y-6">
+              {/* Quick Start Guide Card */}
+              <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 backdrop-blur-sm border border-blue-500/20 rounded-xl p-6 hover:border-blue-500/40 transition-all duration-300 animate-slide-in-right delay-400">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <span className="text-2xl">🚀</span>
+                  Quick Start
+                </h3>
+                <ol className="space-y-3 text-sm text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-300 font-semibold text-xs">1</span>
+                    <span>Create a new auction room or join an existing one</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-300 font-semibold text-xs">2</span>
+                    <span>Select your favorite IPL team</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-300 font-semibold text-xs">3</span>
+                    <span>Wait for other players to join</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-300 font-semibold text-xs">4</span>
+                    <span>Start bidding and build your dream team!</span>
+                  </li>
+                </ol>
+              </div>
             </div>
           </div>
         </div>
