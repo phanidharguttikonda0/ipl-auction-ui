@@ -10,13 +10,13 @@ export const StrictModeModal = ({ isOpen, onClose }: StrictModeModalProps) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
             <div
-                className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-scale-in overflow-hidden relative"
+                className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl animate-scale-in overflow-hidden relative"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header with gradient background */}
-                <div className="relative bg-gradient-to-r from-red-900/40 via-purple-900/40 to-blue-900/40 p-6 border-b border-gray-700/50">
+                <div className="relative bg-gradient-to-r from-red-900/40 via-purple-900/40 to-blue-900/40 p-6 border-b border-gray-700/50 flex-shrink-0">
                     {/* Decorative background elements */}
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <ShieldAlert className="w-32 h-32 text-red-500" />
@@ -46,7 +46,7 @@ export const StrictModeModal = ({ isOpen, onClose }: StrictModeModalProps) => {
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar min-h-0">
 
                     {/* Rules Section Grid */}
                     <div className="grid md:grid-cols-2 gap-6">
@@ -157,8 +157,8 @@ export const StrictModeModal = ({ isOpen, onClose }: StrictModeModalProps) => {
 
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 bg-gray-900 border-t border-gray-800 flex justify-end">
+                {/* Footer - Fixed at bottom */}
+                <div className="p-4 bg-gray-900 border-t border-gray-800 flex justify-end flex-shrink-0">
                     <button
                         onClick={onClose}
                         className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-900/20 transition-all active:scale-95"
