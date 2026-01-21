@@ -6,7 +6,9 @@ import { HomePage } from "./pages/HomePage";
 import { AuctionRoomPage } from "./pages/AuctionRoomPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GOOGLE_CLIENT_ID } from "./constants";
-import { getAuthToken } from "./services/api";
+import { getAuthToken, setGlobalToastCallback } from "./services/api";
+import { ToastProvider, useToast } from "./contexts/ToastContext";
+import { useEffect } from "react";
 
 function RootRedirect() {
   const token = getAuthToken();
@@ -15,7 +17,7 @@ function RootRedirect() {
 
 function AuctionRoomWrapper() {
   const { roomId } = useParams<{ roomId: string }>();
-  
+
   if (!roomId) {
     return <Navigate to="/home" replace />;
   }
@@ -23,36 +25,51 @@ function AuctionRoomWrapper() {
   return <AuctionRoomPage roomId={roomId} />;
 }
 
+function AppRoutes() {
+  const { showToast } = useToast();
+
+  // Connect global toast callback to API service
+  useEffect(() => {
+    setGlobalToastCallback(showToast);
+  }, [showToast]);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="/authentication" element={<LoginPage />} />
+        <Route
+          path="/authentication/team-selection"
+          element={<TeamSelectionPage />}
+        />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/home/room/:roomId"
+          element={
+            <ProtectedRoute>
+              <AuctionRoomWrapper />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="/authentication" element={<LoginPage />} />
-          <Route
-            path="/authentication/team-selection"
-            element={<TeamSelectionPage />}
-          />
-          <Route
-            path="/home"
-            element={
-              <ProtectedRoute>
-                <HomePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/home/room/:roomId"
-            element={
-              <ProtectedRoute>
-                <AuctionRoomWrapper />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <ToastProvider>
+        <AppRoutes />
+      </ToastProvider>
     </GoogleOAuthProvider>
   );
 }

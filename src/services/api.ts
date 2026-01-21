@@ -1,11 +1,26 @@
 import { API_BASE_URL } from "../constants";
 import type { AuctionRoom, Participant, TeamDetails, PlayerDetails, RoomResponse, TeamName, SoldPlayerOutput, UnSoldPlayerOutput, FeedBackRequest, PoolPlayer } from "../types";
+import type { ToastType } from "../components/Toast";
 
 export const getAuthToken = (): string | null => localStorage.getItem("auth_token");
 
 export const setAuthToken = (token: string) => localStorage.setItem("auth_token", token);
 
 export const clearAuthToken = () => localStorage.removeItem("auth_token");
+
+/**
+ * Global toast callback for showing notifications from API layer
+ */
+interface ToastOptions {
+  centered?: boolean;
+  duration?: number;
+}
+
+let globalToastCallback: ((message: string, type: ToastType, options?: ToastOptions) => void) | null = null;
+
+export const setGlobalToastCallback = (callback: typeof globalToastCallback) => {
+  globalToastCallback = callback;
+};
 
 /**
  * Handles unauthorized (401) responses by clearing auth token and redirecting to authentication
@@ -24,6 +39,29 @@ const checkUnauthorized = (response: Response): void => {
     handleUnauthorized();
     throw new Error("Unauthorized - Please login again");
   }
+};
+
+/**
+ * Handles server errors (500-series and 530 status codes)
+ */
+const handleServerError = (response: Response): void => {
+  if ((response.status >= 500 && response.status < 600) || response.status === 530) {
+    if (globalToastCallback) {
+      globalToastCallback("Server is temporarily stopped, due to heavy cost", "error", { centered: true, duration: 0 });
+    }
+    throw new Error("Server temporarily unavailable");
+  }
+};
+
+/**
+ * Handles network errors (server unreachable, CORS failures, etc.)
+ */
+const handleNetworkError = (error: unknown): never => {
+  console.error("Network error:", error);
+  if (globalToastCallback) {
+    globalToastCallback("Server is temporarily stopped, due to heavy cost", "error", { centered: true, duration: 0 });
+  }
+  throw new Error("Server is unreachable");
 };
 
 const getHeaders = (includeAuth = true): HeadersInit => {
@@ -114,195 +152,293 @@ export const apiClient = {
     lastRoomId: string = "0",
     lastRecordTimeStamp: string = "0"
   ): Promise<AuctionRoom[]> {
-    const encodedTimestamp = encodeURIComponent(btoa(lastRecordTimeStamp));
-    const url = `${API_BASE_URL}/rooms/get-auctions-played/${perPage}/${lastRoomId}/${encodedTimestamp}`;
+    try {
+      const encodedTimestamp = encodeURIComponent(btoa(lastRecordTimeStamp));
+      const url = `${API_BASE_URL}/rooms/get-auctions-played/${perPage}/${lastRoomId}/${encodedTimestamp}`;
 
-    const response = await fetch(url, {
-      headers: getHeaders(),
-    });
+      const response = await fetch(url, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) throw new Error("Failed to fetch auctions");
-    return response.json();
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) throw new Error("Failed to fetch auctions");
+      return response.json();
+    } catch (error) {
+      // If it's already our custom error, re-throw it
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      // Otherwise, it's a network error
+      handleNetworkError(error);
+    }
   },
 
   async getParticipants(roomId: string): Promise<Participant[]> {
-    const response = await fetch(`${API_BASE_URL}/rooms/get-participants/${roomId}`, {
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/rooms/get-participants/${roomId}`, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) throw new Error("Failed to fetch participants");
-    return response.json();
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) throw new Error("Failed to fetch participants");
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
+    }
   },
 
   async getTeamDetails(participantId: number): Promise<TeamDetails> {
-    const response = await fetch(`${API_BASE_URL}/players/get-team-details/${participantId}`, {
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/get-team-details/${participantId}`, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) throw new Error("Failed to fetch team details");
-    return response.json();
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) throw new Error("Failed to fetch team details");
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
+    }
   },
 
   async getTeamPlayers(participantId: number, roomStatus: string): Promise<PlayerDetails[]> {
-    const response = await fetch(`${API_BASE_URL}/players/get-team-players/${participantId}/${roomStatus}`, {
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/get-team-players/${participantId}/${roomStatus}`, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) throw new Error("Failed to fetch team players");
-    return response.json();
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) throw new Error("Failed to fetch team players");
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
+    }
   },
 
   async createRoom(teamName: TeamName, isStrictMode: boolean = false): Promise<RoomResponse> {
-    const response = await fetch(`${API_BASE_URL}/rooms/create-room/${encodeURIComponent(teamName)}/${isStrictMode}`, {
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/rooms/create-room/${encodeURIComponent(teamName)}/${isStrictMode}`, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to create room" }));
-      throw new Error(error.message || "Failed to create room");
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to create room" }));
+        throw new Error(error.message || "Failed to create room");
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
     }
-
-    return response.json();
   },
 
   async joinRoomGetTeams(roomId: string): Promise<string | TeamName[] | any> {
-    const response = await fetch(`${API_BASE_URL}/rooms/join-room-get-teams/${roomId}`, {
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/rooms/join-room-get-teams/${roomId}`, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) {
-      // Try to get error message from response
-      let errorData: any = null;
-      try {
-        errorData = await response.json();
-      } catch {
-        // If response is not JSON, use status text
-        errorData = { message: response.statusText || "Failed to fetch available teams" };
-      }
-
-      // If error has message, return it or throw with that message
-      if (errorData?.message) {
-        // If it's "Already a participant", return the full error object
-        if (errorData.message.includes("Already a participant") || errorData.participant_id) {
-          return errorData;
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) {
+        // Try to get error message from response
+        let errorData: any = null;
+        try {
+          errorData = await response.json();
+        } catch {
+          // If response is not JSON, use status text
+          errorData = { message: response.statusText || "Failed to fetch available teams" };
         }
-        // Otherwise throw with the backend message
-        throw new Error(errorData.message);
+
+        // If error has message, return it or throw with that message
+        if (errorData?.message) {
+          // If it's "Already a participant", return the full error object
+          if (errorData.message.includes("Already a participant") || errorData.participant_id) {
+            return errorData;
+          }
+          // Otherwise throw with the backend message
+          throw new Error(errorData.message);
+        }
+
+        throw new Error(errorData?.detail || "Failed to fetch available teams");
       }
 
-      throw new Error(errorData?.detail || "Failed to fetch available teams");
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
     }
-
-    return response.json();
   },
 
   async joinRoom(roomId: string, teamName: TeamName): Promise<RoomResponse> {
-    const response = await fetch(`${API_BASE_URL}/rooms/join-room/${roomId}/${encodeURIComponent(teamName)}`, {
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/rooms/join-room/${roomId}/${encodeURIComponent(teamName)}`, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to join room" }));
-      throw new Error(error.message || "Failed to join room");
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to join room" }));
+        throw new Error(error.message || "Failed to join room");
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
     }
-
-    return response.json();
   },
 
   async getSoldPlayers(roomId: string, pageNo: number, offset: number = 10): Promise<SoldPlayerOutput[]> {
-    const response = await fetch(`${API_BASE_URL}/players/get-sold-players/${roomId}/${pageNo}/${offset}`, {
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/get-sold-players/${roomId}/${pageNo}/${offset}`, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) {
-      throw new Error("Failed to fetch sold players");
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) {
+        throw new Error("Failed to fetch sold players");
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
     }
-
-    return response.json();
   },
 
   async getUnsoldPlayers(roomId: string, pageNo: number, offset: number = 10): Promise<UnSoldPlayerOutput[]> {
-    const response = await fetch(`${API_BASE_URL}/players/get-unsold-players/${roomId}/${pageNo}/${offset}`, {
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/get-unsold-players/${roomId}/${pageNo}/${offset}`, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) {
-      throw new Error("Failed to fetch unsold players");
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) {
+        throw new Error("Failed to fetch unsold players");
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
     }
-
-    return response.json();
   },
 
   async getPoolPlayers(poolId: number): Promise<PoolPlayer[]> {
-    const response = await fetch(`${API_BASE_URL}/players/get-pool/${poolId}`, {
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/players/get-pool/${poolId}`, {
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) {
-      throw new Error("Failed to fetch pool players");
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) {
+        throw new Error("Failed to fetch pool players");
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
     }
-
-    return response.json();
   },
 
   async submitFeedback(data: FeedBackRequest): Promise<void> {
-    // const params = new URLSearchParams();
-    // params.append("feedback_type", data.feedback_type);
-    // if (data.rating_value !== undefined && data.rating_value !== null) {
-    //   params.append("rating_value", data.rating_value.toString());
-    // }
-    // if (data.title) params.append("title", data.title);
-    // if (data.description) params.append("description", data.description);
+    try {
+      // const params = new URLSearchParams();
+      // params.append("feedback_type", data.feedback_type);
+      // if (data.rating_value !== undefined && data.rating_value !== null) {
+      //   params.append("rating_value", data.rating_value.toString());
+      // }
+      // if (data.title) params.append("title", data.title);
+      // if (data.description) params.append("description", data.description);
 
-    const response = await fetch(`${API_BASE_URL}/feedback`, {
-      method: "POST",
-      headers: {
-        ...getHeaders(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+      const response = await fetch(`${API_BASE_URL}/feedback`, {
+        method: "POST",
+        headers: {
+          ...getHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-    checkUnauthorized(response);
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to submit feedback" }));
-      throw new Error(error.message || "Failed to submit feedback");
+      checkUnauthorized(response);
+      handleServerError(response);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to submit feedback" }));
+        throw new Error(error.message || "Failed to submit feedback");
+      }
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
     }
   },
   async updateFavoriteTeam(teamName: TeamName): Promise<any> {
-    const response = await fetch(`${API_BASE_URL}/update-favorite-team/${encodeURIComponent(teamName)}`, {
-      method: "GET",
-      headers: getHeaders(),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/update-favorite-team/${encodeURIComponent(teamName)}`, {
+        method: "GET",
+        headers: getHeaders(),
+      });
 
-    checkUnauthorized(response);
+      checkUnauthorized(response);
+      handleServerError(response);
 
-    // Some GET requests might return a new token in headers, check for it
-    const authHeader = response.headers.get("authorization") ||
-      response.headers.get("Authorization") ||
-      response.headers.get("AUTHORIZATION");
+      // Some GET requests might return a new token in headers, check for it
+      const authHeader = response.headers.get("authorization") ||
+        response.headers.get("Authorization") ||
+        response.headers.get("AUTHORIZATION");
 
-    if (authHeader) {
-      console.log("Received new authorization header, updating token");
-      setAuthToken(authHeader);
+      if (authHeader) {
+        console.log("Received new authorization header, updating token");
+        setAuthToken(authHeader);
+      }
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Failed to update favorite team" }));
+        throw new Error(error.message || "Failed to update favorite team");
+      }
+
+      return response.json().catch(() => ({})); // Return empty object if no JSON
+    } catch (error) {
+      if (error instanceof Error && (error.message === "Unauthorized - Please login again" || error.message === "Server temporarily unavailable")) {
+        throw error;
+      }
+      handleNetworkError(error);
     }
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to update favorite team" }));
-      throw new Error(error.message || "Failed to update favorite team");
-    }
-
-    return response.json().catch(() => ({})); // Return empty object if no JSON
   },
 };
 
