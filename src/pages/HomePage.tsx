@@ -130,6 +130,22 @@ export const HomePage = () => {
               <span className="text-sm font-medium text-orange-300">🎯 Strategic Gameplay</span>
             </div>
           </div>
+
+          {/* VibeRank Badge */}
+          <div className="flex justify-center mb-6 animate-fade-in-up delay-400">
+            <a
+              href="https://viberank.dev/apps/Real%20Time%20IPL%20Auction%20with%20Real%20Time%20Communication"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-transform hover:scale-105 duration-300"
+            >
+              <img
+                src="https://viberank.dev/badge?app=Real%20Time%20IPL%20Auction%20with%20Real%20Time%20Communication&theme=dark"
+                alt="Real Time IPL Auction with Real Time Communication on VibeRank"
+                className="rounded-lg shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-shadow duration-300"
+              />
+            </a>
+          </div>
         </header>
 
         {/* Main Content Grid */}
